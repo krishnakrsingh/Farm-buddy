@@ -7,6 +7,7 @@ import { Mic, Square, Loader2, AlertCircle, RefreshCw, X, Video, VideoOff, Volum
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/lib/LanguageContext";
 
 type AuthInfo = {
     ephemeralToken?: string;
@@ -31,6 +32,7 @@ export default function LiveAnalysis() {
     const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const router = useRouter();
+    const { language, t } = useLanguage();
 
     const { connect, disconnect, connected, volume, transcript } = useLiveApi();
 
@@ -113,9 +115,8 @@ export default function LiveAnalysis() {
             isMounted = false;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Only run once on mount
+    }, []);
 
-    // Cleanup video stream on unmount
     useEffect(() => {
         return () => {
             if (videoStream) {
@@ -153,6 +154,12 @@ export default function LiveAnalysis() {
 
             try {
                 const connectOpts = buildConnectOptions(currentAuth);
+
+                // Build system instruction dynamically based on selected language
+                const langInstruction = language.code === "hi"
+                    ? `आप एक विशेषज्ञ पौधा डॉक्टर हैं। वीडियो स्ट्रीम का विश्लेषण करके पौधों और उनकी स्वास्थ्य समस्याओं की पहचान करें। आपको हमेशा और केवल हिंदी में ही बोलना है। सभी बातचीत हिंदी में होनी चाहिए। संक्षिप्त, मित्रतापूर्ण और सहायक रहें।`
+                    : `You are an expert plant doctor. Analyze the video stream to identify plants and their health issues. You must ALWAYS speak ONLY in ${language.name} language (${language.native}). All conversations must be in ${language.name}. Be concise, friendly, and helpful.`;
+
                 const config: Parameters<typeof connect>[0] = {
                     model: "models/gemini-2.5-flash-native-audio-latest",
                     generationConfig: {
@@ -162,7 +169,7 @@ export default function LiveAnalysis() {
                         },
                     },
                     systemInstruction: {
-                        parts: [{ text: "आप एक विशेषज्ञ पौधा डॉक्टर हैं। वीडियो स्ट्रीम का विश्लेषण करके पौधों और उनकी स्वास्थ्य समस्याओं की पहचान करें। आपको हमेशा और केवल हिंदी में ही बोलना है। सभी बातचीत हिंदी में होनी चाहिए। भारतीय उच्चारण और भारतीय अंग्रेजी शब्दों का उपयोग करें। संक्षिप्त, मित्रतापूर्ण और सहायक रहें। You are an expert plant doctor. Analyze the video stream to identify plants and their health issues. You must ALWAYS speak ONLY in Hindi language with Indian accent. All conversations must be in Hindi. Use Indian pronunciation and Indian English words when needed. Be concise, friendly, and helpful." }],
+                        parts: [{ text: langInstruction }],
                     },
                 };
                 await connect(config, videoRef.current, connectOpts);
@@ -182,7 +189,6 @@ export default function LiveAnalysis() {
         router.push('/');
     };
 
-    // Auto-stop if connection drops
     const wasConnected = useRef(false);
     useEffect(() => {
         if (connected) wasConnected.current = true;
@@ -199,15 +205,13 @@ export default function LiveAnalysis() {
             {/* Top Navigation & Status */}
             <div className="absolute top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top)] bg-gradient-to-b from-black/60 to-transparent">
                 <div className="flex items-center justify-between p-4">
-                    {/* Back Button */}
                     <Link href="/" className="h-10 w-10 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center transition-all border border-white/10">
                         <ArrowLeft className="text-white w-5 h-5" />
                     </Link>
 
-                    {/* Live Indicator */}
                     <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/10">
                         <Volume2 className="w-4 h-4 text-white" />
-                        <span className="text-white text-sm font-medium tracking-wide">Live</span>
+                        <span className="text-white text-sm font-medium tracking-wide">{t("live")}</span>
                         {isStreaming && (
                             <span className="relative flex h-2 w-2 ml-1">
                                 <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", connected ? "bg-green-400" : "bg-white/50")}></span>
@@ -216,7 +220,7 @@ export default function LiveAnalysis() {
                         )}
                     </div>
 
-                    <div className="w-10" /> {/* Spacer */}
+                    <div className="w-10" />
                 </div>
             </div>
 
@@ -237,7 +241,7 @@ export default function LiveAnalysis() {
                 </div>
             )}
 
-            {/* Main Controls - Following Inspiration Image */}
+            {/* Main Controls */}
             <div className="absolute bottom-0 left-0 right-0 z-40 pb-8 pt-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col items-center">
 
                 {/* Volume Visualizer */}
@@ -255,11 +259,11 @@ export default function LiveAnalysis() {
                     ) : isStreaming ? (
                         <Loader2 size={24} className="animate-spin text-white/70" />
                     ) : (
-                        <div className="text-white/70 text-sm font-medium">Ready to connect</div>
+                        <div className="text-white/70 text-sm font-medium">{t("ready_to_connect")}</div>
                     )}
                 </div>
 
-                {/* Flip Camera Button - positioned near bottom controls like in image */}
+                {/* Flip Camera Button */}
                 <div className="w-full px-8 flex justify-end mb-6">
                     <button
                         onClick={toggleCamera}
@@ -271,8 +275,6 @@ export default function LiveAnalysis() {
 
                 {/* Bottom Action Pill */}
                 <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[32px] p-2 flex items-center gap-2 sm:gap-4 shadow-2xl">
-
-                    {/* Camera Toggle Button */}
                     <button
                         onClick={toggleVideo}
                         className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-white text-black flex items-center justify-center hover:bg-gray-200 transition-all shadow-md"
@@ -280,7 +282,6 @@ export default function LiveAnalysis() {
                         {isVideoEnabled ? <Video className="w-6 h-6 sm:w-7 sm:h-7" /> : <VideoOff className="w-6 h-6 sm:w-7 sm:h-7 text-gray-700" />}
                     </button>
 
-                    {/* Mic Toggle to Start AI */}
                     <button
                         onClick={toggleLive}
                         disabled={!!authError || cameraLoading}
@@ -296,14 +297,12 @@ export default function LiveAnalysis() {
                         )}
                     </button>
 
-                    {/* End Call / Close Button */}
                     <button
                         onClick={endCall}
                         className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all border border-white/5"
                     >
                         <X className="w-7 h-7 sm:w-8 sm:h-8" />
                     </button>
-
                 </div>
             </div>
 
@@ -320,7 +319,7 @@ export default function LiveAnalysis() {
                 </div>
             )}
 
-            {/* Optional Transcript Overlay */}
+            {/* Transcript Overlay */}
             {connected && transcript && (
                 <div className="absolute top-20 left-4 right-4 z-40 max-w-lg mx-auto pointer-events-none">
                     <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-lg">
@@ -333,4 +332,3 @@ export default function LiveAnalysis() {
         </div>
     );
 }
-

@@ -1,197 +1,340 @@
 "use client";
 
-import { MapPin, Bell, User, ChevronRight, Activity, Droplet, Leaf } from "lucide-react";
-import { ScannerCTA } from "@/components/ScannerCTA";
-import { AlertCard } from "@/components/AlertCard";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+    User, Activity as ActivityIcon,
+    Leaf, Mic, Square, Loader2, Globe, AlertCircle,
+    ChevronDown, CloudRain, AlertTriangle,
+    Search, SlidersHorizontal, ArrowUpRight, Home, Calendar, Heart, MessageSquare, Video, Info
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { AdvancedWeatherWidget } from "@/components/AdvancedWeatherWidget";
+import { useLiveApi } from "@/hooks/use-live-api";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { useLanguage, LANGUAGES } from "@/lib/LanguageContext";
+
+type AuthInfo = {
+    ephemeralToken?: string;
+    authMethod?: "ephemeral-token";
+    error?: string;
+};
 
 export default function HomePage() {
-  const { scrollY } = useScroll();
-  const headerOpacity = useTransform(scrollY, [0, 50], [0, 1]);
+    const audioRef = useRef<HTMLVideoElement>(null);
+    const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+    const [authInfo, setAuthInfo] = useState<AuthInfo | null>(null);
+    const [authError, setAuthError] = useState<string | null>(null);
+    const [isStreaming, setIsStreaming] = useState(false);
+    const [isMicLoading, setIsMicLoading] = useState(false);
+    const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
-  return (
-    <div className="min-h-screen bg-background text-foreground pb-32 relative overflow-hidden font-body selection:bg-emerald-500/30">
-      {/* Dynamic Ambient Background */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <motion.div
-          className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-emerald-500/10 blur-[120px] mix-blend-normal"
-          animate={{ x: [0, 50, 0], y: [0, 30, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-[40%] -right-[20%] w-[60vw] h-[60vw] rounded-full bg-yellow-500/10 blur-[120px] mix-blend-normal"
-          animate={{ x: [0, -40, 0], y: [0, -50, 0] }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-        />
-        <div className="absolute inset-0 bg-background/40 backdrop-blur-[10px]" />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
-      </div>
+    const { language, setLanguage, t } = useLanguage();
 
-      {/* Sticky Glass Header */}
-      <motion.header
-        style={{ opacity: headerOpacity }}
-        className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl border-b border-white/10 pt-4 pb-3 px-5 flex justify-between items-center"
-      >
-        <div className="flex items-center gap-2">
-          <MapPin size={16} className="text-emerald-500" />
-          <span className="font-bold text-sm tracking-wide">Pipli Village</span>
+    const { connect, disconnect, connected, volume, transcript } = useLiveApi();
+
+    const fetchToken = useCallback(async (): Promise<AuthInfo | null> => {
+        try {
+            setAuthError(null);
+            const res = await fetch("/api/vertex-auth");
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                setAuthError(data.error || `Auth request failed (${res.status})`);
+                return null;
+            }
+            const info: AuthInfo = { ephemeralToken: data.ephemeralToken, authMethod: data.authMethod as "ephemeral-token" };
+            setAuthInfo(info);
+            return info;
+        } catch (err) {
+            setAuthError("Could not reach auth service.");
+            return null;
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchToken();
+    }, [fetchToken]);
+
+    const startAudio = useCallback(async () => {
+        setIsMicLoading(true);
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setAuthError("Microphone access not supported.");
+            setIsMicLoading(false);
+            return false;
+        }
+
+        try {
+            if (audioStream) {
+                audioStream.getTracks().forEach((t) => t.stop());
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+                video: false,
+            });
+
+            setAudioStream(stream);
+            setIsMicLoading(false);
+
+            if (audioRef.current) {
+                audioRef.current.srcObject = stream;
+            }
+            return true;
+        } catch (err: any) {
+            console.error("Mic error:", err);
+            setIsMicLoading(false);
+            setAuthError("Microphone permission denied.");
+            return false;
+        }
+    }, [audioStream]);
+
+    useEffect(() => {
+        return () => {
+            if (audioStream) {
+                audioStream.getTracks().forEach((t) => t.stop());
+            }
+        };
+    }, [audioStream]);
+
+    const toggleLive = async () => {
+        if (isStreaming) {
+            disconnect();
+            setIsStreaming(false);
+        } else {
+            const hasMic = await startAudio();
+            if (!hasMic) return;
+
+            const currentAuth = await fetchToken();
+            if (!currentAuth || !currentAuth.ephemeralToken) return;
+
+            setIsStreaming(true);
+
+            try {
+                const config = {
+                    model: "models/gemini-2.5-flash-native-audio-latest",
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } },
+                        },
+                    },
+                    systemInstruction: {
+                        parts: [{
+                            text: `You are an expert AI agriculture assistant for DrFarm. 
+                          You must ONLY speak in the ${language.name} language. 
+                          Always communicate in ${language.name} (${language.native}). 
+                          Be highly concise, friendly, and practical. 
+                          Provide helpful farming advice, weather tips, and crop health information.`
+                        }],
+                    },
+                };
+
+                await connect(config, audioRef.current, { accessToken: currentAuth.ephemeralToken, url: "" });
+            } catch (err) {
+                console.error("Connection error:", err);
+                setIsStreaming(false);
+                setAuthError("Failed to connect to AI.");
+            }
+        }
+    };
+
+    const wasConnected = useRef(false);
+    useEffect(() => {
+        if (connected) wasConnected.current = true;
+        else if (wasConnected.current && isStreaming) {
+            setIsStreaming(false);
+            wasConnected.current = false;
+        }
+    }, [connected, isStreaming]);
+
+    return (
+        <div className="min-h-screen bg-[#DBEDD9] text-[#1B4332] pb-32 relative font-sans overflow-x-hidden selection:bg-[#B7D8C6]">
+            <video ref={audioRef} autoPlay playsInline muted className="hidden" />
+
+            {/* Embedded Styles */}
+            <style key="scroll-style" jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+      `}</style>
+
+
+            <div className="max-w-md mx-auto relative pt-10 px-5 space-y-7 z-10 pb-10">
+
+                {/* Header */}
+                <header className="flex justify-between items-center bg-transparent">
+                    <div className="flex items-center gap-3">
+                        <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden shadow-sm">
+                            <img src="https://i.pravatar.cc/150?img=33" className="w-full h-full object-cover" alt="User" />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-xl font-extrabold text-[#113A28] leading-none flex items-center gap-1">
+                                {t("hey")} krishna<span className="text-xl">👋</span>
+                            </h1>
+                            <div className="bg-white/90 text-[#6C8576] text-[11px] font-bold px-3 py-1 rounded-full shadow-sm w-max mt-1.5 border border-[#113A28]/5 tracking-wide">
+                                {t("pro_farmer")}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Language Toggle (replacing Bell) */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                            className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.04)] relative transition-transform hover:scale-105"
+                        >
+                            <Globe className="text-[#6C8576] w-5 h-5" />
+                        </button>
+
+                        {/* Language Dropdown */}
+                        <AnimatePresence>
+                            {isLangMenuOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                    className="absolute right-0 top-full mt-2 w-[200px] max-h-[350px] overflow-y-auto rounded-[20px] bg-white border border-[#E9F4EC] shadow-[0_16px_48px_rgba(0,0,0,0.12)] z-50 p-2 no-scrollbar"
+                                >
+                                    <div className="px-3 py-2 border-b border-[#E9F4EC] mb-1">
+                                        <p className="text-[11px] font-bold text-[#8DA697] uppercase tracking-wider">{t("select_language")}</p>
+                                    </div>
+                                    {LANGUAGES.map((lang) => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => { setLanguage(lang); setIsLangMenuOpen(false); }}
+                                            className={cn(
+                                                "w-full text-left px-3 py-2.5 rounded-[12px] transition-colors flex items-center justify-between",
+                                                language.code === lang.code
+                                                    ? "bg-[#184F35] text-white"
+                                                    : "hover:bg-[#F4F9F4]"
+                                            )}
+                                        >
+                                            <span className={cn("text-[13px] font-bold", language.code === lang.code ? "text-white" : "text-[#113A28]")}>{lang.native}</span>
+                                            <span className={cn("text-[10px] font-medium", language.code === lang.code ? "text-white/70" : "text-[#8DA697]")}>{lang.name}</span>
+                                        </button>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </header>
+
+
+
+                {/* Weather Widget */}
+                <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
+                    <div className="px-1 mb-2">
+                        <h2 className="text-[17px] font-extrabold text-[#113A28]">{t("weather_updates")}</h2>
+                    </div>
+                    <AdvancedWeatherWidget />
+                </motion.div>
+
+                {/* Available Agronomist (Doctor Card replacement) */}
+                <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
+
+
+                    <div className="bg-white rounded-[32px] p-4 shadow-[0_12px_32px_rgba(0,0,0,0.05)] border border-white">
+                        <div className="flex items-start">
+                            {/* Image Profile Box overlapping */}
+                            <div className="relative w-[110px] h-[130px] rounded-[24px] bg-[#F4F9F4] flex items-end justify-center overflow-hidden shrink-0 border border-[#E9F4EC]">
+                                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=drfarm3&backgroundColor=transparent" alt="Dr Farm AI" className="w-[90px] h-[90px] object-contain relative z-10 -mb-2" />
+
+                                {/* Online indicator */}
+                                <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm shadow-sm rounded-full flex items-center gap-1 px-2 py-0.5 z-20">
+                                    <div className="w-1.5 h-1.5 bg-[#4CAF50] rounded-full animate-pulse" />
+                                    <span className="text-[9px] font-bold text-[#184F35] uppercase tracking-wider">{t("online")}</span>
+                                </div>
+
+                                {connected && (
+                                    <motion.div animate={{ scale: 1 + volume * 0.8 }} className="absolute bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-[#4CAF50]/30 rounded-full blur-md z-0" />
+                                )}
+                            </div>
+
+                            {/* Content beside image */}
+                            <div className="flex-1 ml-4 pt-1">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="text-[18px] font-extrabold text-[#113A28] leading-snug">{t("dr_farm_ai")}</h3>
+                                        <p className="text-[13px] font-medium text-[#6C8576] mt-0.5">{t("crop_pathologist")}</p>
+                                    </div>
+                                    <div className="bg-[#FFF8DF] px-2 py-1 rounded-[10px] flex items-center gap-1">
+                                        <span className="text-[#E7A600] text-[12px] font-black">★ 4.9</span>
+                                    </div>
+                                </div>
+
+                                {/* Price / Sub status section */}
+                                <div className="mt-4 flex justify-between items-end pr-1">
+                                    <div>
+                                        <h4 className="text-[20px] font-black text-[#184F35] leading-none">{t("free")}</h4>
+                                        <p className="text-[11px] font-semibold text-[#8DA697] mt-1 ml-0.5">{t("unlimited_24_7")}</p>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button className="w-10 h-10 rounded-full border-[1.5px] border-[#E8EEEA] flex items-center justify-center hover:bg-[#F4F9F4] group transition-colors">
+                                            <Heart className="w-[18px] h-[18px] text-[#A0B8AA] group-hover:text-red-400 group-hover:fill-red-400" />
+                                        </button>
+                                        <button className="w-10 h-10 rounded-full bg-[#FAFCFB] border-[1.5px] border-[#E8EEEA] flex items-center justify-center hover:bg-[#F4F9F4] transition-colors">
+                                            <ArrowUpRight className="w-[18px] h-[18px] text-[#113A28]" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Real-time Assistant Status / Transcription */}
+                        <div className="mt-4 bg-[#F8FBF8] rounded-[20px] p-4 min-h-[3.5rem] border border-[#E9F4EC] relative mb-1">
+                            <AnimatePresence mode="wait">
+                                {connected && transcript ? (
+                                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[#113A28] text-[13px] font-bold italic line-clamp-2 leading-snug w-[85%]">
+                                        &quot;{transcript}&quot;
+                                    </motion.p>
+                                ) : (
+                                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[#8DA697] text-[13px] font-semibold leading-relaxed flex items-center gap-2">
+                                        {isMicLoading ? (
+                                            <><Loader2 className="w-4 h-4 animate-spin text-[#184F35]" /> {t("connecting")}</>
+                                        ) : connected ? (
+                                            t("listening")
+                                        ) : (
+                                            <span className="flex items-center gap-1.5"><Info size={14} className="text-[#A0B8AA]" /> {t("ai_ready")}</span>
+                                        )}
+                                    </motion.p>
+                                )}
+                            </AnimatePresence>
+
+                            {authError && (
+                                <div className="absolute -bottom-8 left-0 right-0 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 shadow-sm border border-red-100 z-10">
+                                    <AlertCircle size={12} /> {authError}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Action Buttons spanning full width inside card */}
+                        <div className="flex gap-3 mt-4">
+                            <Link href="/chat" className="flex-1 py-[14px] rounded-[16px] bg-white border-[1.5px] border-[#E8EEEA] flex items-center justify-center gap-2 font-bold text-[14px] text-[#113A28] hover:bg-[#FAFCFB] transition-colors shadow-sm">
+                                <MessageSquare className="w-4 h-4 text-[#8DA697]" /> {t("message")}
+                            </Link>
+
+                            <Link
+                                href="/scan"
+                                className="flex-1 py-[14px] rounded-[16px] flex items-center justify-center gap-2 font-bold text-[14px] transition-all shadow-md bg-[#184F35] border border-[#184F35] text-white hover:bg-[#123926]"
+                            >
+                                <Video className="w-[18px] h-[18px]" />
+                                {t("video_call")}
+                            </Link>
+                        </div>
+                    </div>
+                </motion.div>
+
+
+
+            </div>
+
+
+
         </div>
-        <div className="relative bg-white/5 p-2 rounded-full border border-white/10">
-          <Bell size={18} />
-          <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-background rounded-full"></span>
-        </div>
-      </motion.header>
-
-      <main className="relative z-10 px-5 pt-4 max-w-xl mx-auto space-y-8">
-        {/* Superior Greeting Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="pb-2"
-        >
-          <p className="text-muted-foreground text-sm font-bold tracking-wider uppercase mb-1 flex items-center gap-1.5">
-            <MapPin size={14} className="text-emerald-500" />
-            Pipli Village
-          </p>
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-black text-foreground tracking-tight leading-none mb-2">
-                Good Morning.
-              </h1>
-              <p className="text-xs text-muted-foreground font-medium">Updated today at 07:15 AM</p>
-            </div>
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-              className="w-12 h-12 rounded-full overflow-hidden border border-border bg-background shadow-sm flex items-center justify-center relative cursor-pointer group"
-            >
-              <User className="text-muted-foreground w-6 h-6 group-hover:text-foreground transition-colors" />
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Dynamic Weather & Crop Status */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <AdvancedWeatherWidget />
-        </motion.div>
-
-        {/* Market Intelligence Hologram Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="relative group overflow-hidden bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-[2rem] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-[40px] group-hover:bg-yellow-500/20 transition-colors duration-700" />
-
-          <div className="flex justify-between items-center relative z-10 mb-2">
-            <h3 className="text-xs font-bold py-1 px-3 rounded-full bg-background/50 border border-border/50 uppercase tracking-widest text-muted-foreground inline-flex items-center gap-2">
-              <Activity size={12} className="text-emerald-500" />
-              Market Intelligence
-            </h3>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform cursor-pointer">
-              Details <ChevronRight size={14} />
-            </span>
-          </div>
-
-          <div className="flex items-end justify-between mt-4 relative z-10">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Local Wheat (A-Grade)</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-black tracking-tighter">₹2,275</span>
-                <span className="text-sm font-bold text-muted-foreground">/q</span>
-              </div>
-            </div>
-
-            {/* Miniature Sparkline (CSS only representation) */}
-            <div className="flex items-end gap-1 h-10">
-              {[40, 50, 45, 60, 55, 70, 85].map((h, i) => (
-                <div key={i} className="w-2 bg-emerald-500/20 rounded-t-sm" style={{ height: `${h}%` }}>
-                  {i === 6 && <div className="w-full h-full bg-emerald-500 rounded-t-sm animate-pulse" />}
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Focus & Insights Carousel */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="space-y-4"
-        >
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold tracking-tight">Today's Focus</h2>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* Action Card 1 */}
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-[1.5rem] p-4 relative overflow-hidden group cursor-pointer hover:shadow-lg transition-all">
-              <div className="absolute -right-4 -top-4 w-16 h-16 bg-indigo-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform" />
-              <Droplet size={24} className="text-indigo-500 mb-3" />
-              <h4 className="font-bold text-sm text-indigo-950 dark:text-indigo-200">Irrigation</h4>
-              <p className="text-xs text-indigo-700/70 dark:text-indigo-400/70 font-medium mt-1">Check Field B</p>
-            </div>
-
-            {/* Action Card 2 */}
-            <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border border-orange-100 dark:border-orange-900/50 rounded-[1.5rem] p-4 relative overflow-hidden group cursor-pointer hover:shadow-lg transition-all">
-              <div className="absolute -right-4 -top-4 w-16 h-16 bg-orange-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform" />
-              <Leaf size={24} className="text-orange-500 mb-3" />
-              <h4 className="font-bold text-sm text-orange-950 dark:text-orange-200">Crop Health</h4>
-              <p className="text-xs text-orange-700/70 dark:text-orange-400/70 font-medium mt-1">Rust risk is moderate</p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Magically Floating Scanner Button */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="pt-2"
-        >
-          <div className="relative group cursor-pointer">
-            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-teal-500 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-            <ScannerCTA />
-          </div>
-        </motion.div>
-
-        {/* Cinematic Alerts List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="space-y-4 relative"
-        >
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-bold tracking-tight">Intelligence</h2>
-            <span className="text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer transition-colors">View Timeline</span>
-          </div>
-
-          <AlertCard
-            type="warning"
-            title="Yellow Rust Risk Detected"
-            description="Optimal conditions for fungus spreading. Prepare fungicide application for next 48 hrs."
-            date="2 hrs ago"
-          />
-
-          <AlertCard
-            type="info"
-            title="Satellite Imagery Updated"
-            description="Latest NDVI data is available for all fields. Biomass looks excellent in North block."
-            date="5 hrs ago"
-          />
-        </motion.div>
-
-      </main>
-    </div>
-  );
+    );
 }

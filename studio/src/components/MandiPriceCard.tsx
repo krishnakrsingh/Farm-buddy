@@ -1,4 +1,7 @@
+"use client";
+
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useLanguage } from "@/lib/LanguageContext";
 
 interface MandiPriceCardProps {
     mandiName: string;
@@ -9,20 +12,21 @@ interface MandiPriceCardProps {
 }
 
 export function MandiPriceCard({ mandiName, distanceKm, price, previousPrice, trend }: MandiPriceCardProps) {
+    const { t } = useLanguage();
     const priceDiff = price - previousPrice;
     const isUp = priceDiff > 0;
     const isDown = priceDiff < 0;
 
+    const trendLabel = trend === "Rising" ? t("rising") : trend === "Falling" ? t("falling") : t("stable");
+
     return (
         <div className="bg-white dark:bg-zinc-900 border border-border shadow-sm mb-3 rounded-[1.25rem] overflow-hidden transition-all hover:shadow-md">
             <div className="p-4 flex items-center justify-between">
-                {/* Mandi Info */}
                 <div>
                     <h3 className="font-bold text-foreground text-lg leading-tight">{mandiName}</h3>
-                    <p className="text-sm text-muted-foreground font-medium mt-0.5">{distanceKm} km away</p>
+                    <p className="text-sm text-muted-foreground font-medium mt-0.5">{distanceKm} {t("km_away")}</p>
                 </div>
 
-                {/* Price & Action */}
                 <div className="flex items-center gap-4">
                     <div className="text-right">
                         <div className="font-black text-xl text-foreground">₹{price}</div>
@@ -41,7 +45,7 @@ export function MandiPriceCard({ mandiName, distanceKm, price, previousPrice, tr
                                 ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900"
                                 : "bg-gray-50 text-gray-700 border-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:border-zinc-700"
                         }`}>
-                        TREND: {trend.toUpperCase()}
+                        {t("trend")}: {trendLabel}
                     </div>
                 </div>
             </div>

@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Camera, Users, Map, Activity } from "lucide-react";
+import { Camera, Map, Activity, Home, Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/field", label: "Field", icon: Map },
-  { href: "/scan", label: "Scan C.", icon: Camera, main: true },
-  { href: "/community", label: "Chaupal", icon: Users },
+  { href: "/scan", label: "Scan", icon: Camera },
+  { href: "/schemes", label: "Schemes", icon: Landmark },
   { href: "/mandi-prices", label: "Prices", icon: Activity },
 ];
 
@@ -17,45 +17,29 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-      <nav className="flex items-center justify-between gap-1 p-2 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.08)] rounded-[2.5rem] pointer-events-auto w-full max-w-sm mx-auto">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-[380px] z-50">
+      <nav className="w-full bg-white rounded-full shadow-[0_20px_40px_rgba(24,79,53,0.12)] p-2 flex justify-between items-center border border-[#E9F4EC]">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
-          const isMain = item.main;
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex flex-col items-center justify-center transition-all duration-300",
-                isMain
-                  ? "w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/30 -mt-6 ring-4 ring-white dark:ring-zinc-900"
-                  : "w-12 h-12 rounded-2xl",
-                !isMain && isActive ? "text-primary" : "",
-                !isMain && !isActive ? "text-muted-foreground hover:text-foreground" : ""
+                "w-[50px] h-[50px] sm:w-[56px] sm:h-[56px] rounded-full flex flex-col items-center justify-center transition-colors duration-200 shrink-0",
+                isActive
+                  ? "bg-[#184F35] shadow-md"
+                  : "hover:bg-[#F4F9F4]"
               )}
             >
-              <div className="flex flex-col items-center justify-center gap-1">
-                <Icon
-                  size={isMain ? 24 : 20}
-                  strokeWidth={isActive || isMain ? 2.5 : 2}
-                  className={cn(
-                    "transition-transform duration-300",
-                    isActive && !isMain ? "scale-110 mb-0.5" : "scale-100"
-                  )}
-                />
-
-                {!isMain && (
-                  <span className={cn(
-                    "text-[9px] font-bold tracking-tight transition-all duration-300",
-                    isActive ? "opacity-100 text-primary" : "opacity-70 group-hover:opacity-100"
-                  )}>
-                    {item.label}
-                  </span>
+              <Icon
+                className={cn(
+                  isActive ? "w-6 h-6 text-white" : "w-[24px] h-[24px] sm:w-[26px] sm:h-[26px] text-[#A0B8AA]"
                 )}
-              </div>
+                strokeWidth={isActive ? 2 : 1.5}
+              />
             </Link>
           );
         })}

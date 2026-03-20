@@ -12,27 +12,21 @@ export function ScannerCTA({ className, href = "/scan" }: ScannerCTAProps) {
         <Link
             href={href}
             className={cn(
-                "group relative flex items-center justify-between w-full bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 hover:from-emerald-400 hover:to-teal-500 transition-all duration-300 rounded-[1.5rem] shadow-[0_8px_30px_-4px_rgba(16,185,129,0.3)] p-1 overflow-hidden",
+                "group relative flex items-center justify-between w-full bg-[#184F35] hover:bg-[#123926] transition-all duration-300 rounded-[32px] p-2 shadow-[0_12px_32px_rgba(24,79,53,0.15)]",
                 className
             )}
         >
-            {/* Shimmer effect */}
-            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
-
-            <div className="flex items-center gap-4 bg-white/10 dark:bg-black/10 w-full rounded-[1.25rem] p-4 backdrop-blur-sm border border-white/20">
-                <div className="relative flex-shrink-0">
-                    <div className="absolute inset-0 bg-white/30 rounded-2xl blur-md" />
-                    <div className="relative bg-white text-emerald-600 p-3 rounded-2xl shadow-sm">
-                        <Scan size={28} strokeWidth={2.5} />
-                    </div>
+            <div className="flex items-center gap-4 bg-white/10 w-full rounded-[24px] px-5 py-[18px] border border-white/10">
+                <div className="relative flex-shrink-0 bg-white/20 p-[14px] rounded-[18px] text-white">
+                    <Scan size={24} strokeWidth={2.5} />
                 </div>
 
                 <div className="flex-1 text-left">
-                    <h2 className="text-xl font-bold text-white tracking-tight leading-tight">Crop Problem?</h2>
-                    <p className="text-emerald-50 text-sm font-medium mt-0.5 opacity-90">Instant AI Diagnosis</p>
+                    <h2 className="text-[17px] font-extrabold text-white tracking-wide leading-none">Instant Scanner</h2>
+                    <p className="text-[#A4E0B6] text-[12px] font-bold mt-1.5 opacity-90 tracking-wide">AI Crop Disease Check</p>
                 </div>
 
-                <div className="bg-white/20 p-2 rounded-full text-white group-hover:translate-x-1 transition-transform">
+                <div className="bg-white/20 p-3 rounded-full text-white group-hover:translate-x-1 group-hover:bg-white/30 transition-all">
                     <ChevronRight size={20} strokeWidth={3} />
                 </div>
             </div>
