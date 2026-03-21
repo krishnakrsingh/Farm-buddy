@@ -9,7 +9,7 @@ export default function RecordsPage() {
             {/* Header */}
             <div className="bg-blue-600 text-white p-4 pt-6 pb-6 rounded-b-3xl shadow-sm relative z-20">
                 <div className="flex items-center gap-3 mb-4">
-                    <Link href="/more" className="p-2 -ml-2 hover:bg-white/20 rounded-full transition-colors">
+                    <Link href="/" className="p-2 -ml-2 hover:bg-white/20 rounded-full transition-colors">
                         <ArrowLeft size={24} className="text-white" />
                     </Link>
                     <h1 className="text-xl font-bold">Farm Records</h1>

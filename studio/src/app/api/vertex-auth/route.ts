@@ -26,14 +26,14 @@ export async function GET() {
 }
 
 async function tryGetEphemeralToken() {
-    const geminiApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (!geminiApiKey || geminiApiKey.trim().length === 0) {
         return NextResponse.json(
             {
                 error:
-                    "No NEXT_PUBLIC_GEMINI_API_KEY configured. " +
-                    "Please set it in .env.local to use the Live API.",
+                    "No GEMINI_API_KEY configured. " +
+                    "Please set it in .env.local or Vercel env vars to use the Live API.",
             },
             { status: 500 }
         );

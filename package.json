@@ -1,0 +1,11 @@
+{
+  "name": "khetsetu-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix studio",
+    "build": "npm run build --prefix studio",
+    "start": "npm run start --prefix studio",
+    "lint": "npm run lint --prefix studio",
+    "typecheck": "npm run typecheck --prefix studio"
+  }
+}

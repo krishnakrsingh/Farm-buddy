@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   try {
     const { question, schemeContext, userProfile } = await req.json();
 
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey === "your-gemini-api-key-here") {
       return NextResponse.json(
         { error: "Gemini API key not configured" },
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    const systemPrompt = `You are a helpful government schemes assistant for Indian farmers using the DrFarm app.
+    const systemPrompt = `You are a helpful government schemes assistant for Indian farmers using the Khetsetu app.
 You speak in simple, friendly language that any farmer can understand. Avoid jargon.
 Always answer in 2-4 short sentences. Be specific with numbers and rupee amounts.
 If unsure, say so honestly.

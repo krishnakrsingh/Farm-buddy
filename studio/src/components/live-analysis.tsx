@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLiveApi, ConnectOptions } from "@/hooks/use-live-api";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Loader2, AlertCircle, RefreshCw, X, Video, VideoOff, Volume2, ArrowLeft } from "lucide-react";
+import { Mic, Square, Loader2, AlertCircle, RefreshCw, X, Video, VideoOff, Volume2, VolumeX, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,10 +31,17 @@ export default function LiveAnalysis() {
     const [cameraLoading, setCameraLoading] = useState(true);
     const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+    const transcriptRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const { language, t } = useLanguage();
 
-    const { connect, disconnect, connected, volume, transcript } = useLiveApi();
+    const { connect, disconnect, connected, volume, transcript, isAgentMuted, setIsAgentMuted } = useLiveApi();
+
+    useEffect(() => {
+        if (transcriptRef.current) {
+            transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
+        }
+    }, [transcript]);
 
     const fetchToken = useCallback(async (): Promise<AuthInfo | null> => {
         try {
@@ -155,10 +162,14 @@ export default function LiveAnalysis() {
             try {
                 const connectOpts = buildConnectOptions(currentAuth);
 
-                // Build system instruction dynamically based on selected language
-                const langInstruction = language.code === "hi"
-                    ? `आप एक विशेषज्ञ पौधा डॉक्टर हैं। वीडियो स्ट्रीम का विश्लेषण करके पौधों और उनकी स्वास्थ्य समस्याओं की पहचान करें। आपको हमेशा और केवल हिंदी में ही बोलना है। सभी बातचीत हिंदी में होनी चाहिए। संक्षिप्त, मित्रतापूर्ण और सहायक रहें।`
-                    : `You are an expert plant doctor. Analyze the video stream to identify plants and their health issues. You must ALWAYS speak ONLY in ${language.name} language (${language.native}). All conversations must be in ${language.name}. Be concise, friendly, and helpful.`;
+                // Use a static system instruction for Hinglish
+                const langInstruction = `You are an expert plant doctor and farmer friend. Please strictly follow these rules:
+- Always respond ONLY in Hinglish (Hindi written in English letters)
+- Keep tone friendly, simple, and farmer-friendly (no heavy jargon)
+- Be concise but informative
+- If unsure, say "possible issue" instead of guessing confidently
+- Focus only on what is visible in the video (no assumptions beyond visuals)
+- Only speak what is asked, nothing extra, no bluff or unnecessary words.`;
 
                 const config: Parameters<typeof connect>[0] = {
                     model: "models/gemini-2.5-flash-native-audio-latest",
@@ -298,6 +309,13 @@ export default function LiveAnalysis() {
                     </button>
 
                     <button
+                        onClick={() => setIsAgentMuted(!isAgentMuted)}
+                        className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all border border-white/5"
+                    >
+                        {isAgentMuted ? <VolumeX className="w-7 h-7 sm:w-8 sm:h-8 opacity-70" /> : <Volume2 className="w-7 h-7 sm:w-8 sm:h-8" />}
+                    </button>
+
+                    <button
                         onClick={endCall}
                         className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all border border-white/5"
                     >
@@ -322,7 +340,10 @@ export default function LiveAnalysis() {
             {/* Transcript Overlay */}
             {connected && transcript && (
                 <div className="absolute top-20 left-4 right-4 z-40 max-w-lg mx-auto pointer-events-none">
-                    <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-lg">
+                    <div
+                        ref={transcriptRef}
+                        className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-lg max-h-[30vh] overflow-y-auto pointer-events-auto"
+                    >
                         <p className="text-white text-sm leading-relaxed whitespace-pre-wrap text-center">
                             {transcript}
                         </p>

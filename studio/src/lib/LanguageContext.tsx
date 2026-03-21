@@ -47,7 +47,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const [language, setLanguageState] = useState<Language>(LANGUAGES[0]);
 
     useEffect(() => {
-        const saved = localStorage.getItem("drfarm-language");
+        const saved = localStorage.getItem("khetsetu-language");
         if (saved) {
             const found = LANGUAGES.find((l) => l.code === saved);
             if (found) setLanguageState(found);
@@ -56,7 +56,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     const setLanguage = useCallback((lang: Language) => {
         setLanguageState(lang);
-        localStorage.setItem("drfarm-language", lang.code);
+        localStorage.setItem("khetsetu-language", lang.code);
     }, []);
 
     const t = useCallback(

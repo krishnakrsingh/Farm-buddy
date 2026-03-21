@@ -64,7 +64,7 @@ export default function SchemesPage() {
           <div className="max-w-lg mx-auto relative z-10">
             <div className="flex items-center justify-between mb-4">
               <Link
-                href="/more"
+                href="/"
                 className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
               >
                 <ArrowLeft size={20} className="text-white" />

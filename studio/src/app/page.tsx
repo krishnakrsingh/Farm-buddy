@@ -120,7 +120,7 @@ export default function HomePage() {
                     },
                     systemInstruction: {
                         parts: [{
-                            text: `You are an expert AI agriculture assistant for DrFarm. 
+                            text: `You are an expert AI agriculture assistant for Khetsetu. 
                           You must ONLY speak in the ${language.name} language. 
                           Always communicate in ${language.name} (${language.native}). 
                           Be highly concise, friendly, and practical. 
@@ -241,7 +241,7 @@ export default function HomePage() {
                         <div className="flex items-start">
                             {/* Image Profile Box overlapping */}
                             <div className="relative w-[110px] h-[130px] rounded-[24px] bg-[#F4F9F4] flex items-end justify-center overflow-hidden shrink-0 border border-[#E9F4EC]">
-                                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=drfarm3&backgroundColor=transparent" alt="Dr Farm AI" className="w-[90px] h-[90px] object-contain relative z-10 -mb-2" />
+                                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=khetsetu3&backgroundColor=transparent" alt="Khetsetu AI" className="w-[90px] h-[90px] object-contain relative z-10 -mb-2" />
 
                                 {/* Online indicator */}
                                 <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm shadow-sm rounded-full flex items-center gap-1 px-2 py-0.5 z-20">

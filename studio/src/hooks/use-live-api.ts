@@ -36,6 +36,15 @@ export function useLiveApi() {
     const [connected, setConnected] = useState(false);
     const [volume, setVolume] = useState(0);
     const [transcript, setTranscript] = useState<string>("");
+    const [isAgentMuted, setIsAgentMuted] = useState(false);
+    const isAgentMutedRef = useRef(isAgentMuted);
+
+    useEffect(() => {
+        isAgentMutedRef.current = isAgentMuted;
+        if (audioStreamerRef.current) {
+            audioStreamerRef.current.setMuted(isAgentMuted);
+        }
+    }, [isAgentMuted]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sessionRef = useRef<any>(null);
@@ -165,7 +174,9 @@ export function useLiveApi() {
                                             bytes[i] = binaryString.charCodeAt(i);
                                         }
                                         const pcm16 = new Int16Array(bytes.buffer);
-                                        audioStreamerRef.current?.addPCM16(pcm16);
+                                        if (!isAgentMutedRef.current) {
+                                            audioStreamerRef.current?.addPCM16(pcm16);
+                                        }
                                     } catch (e) {
                                         console.error("[useLiveApi] Error decoding audio:", e);
                                     }
@@ -288,5 +299,5 @@ export function useLiveApi() {
         };
     }, [cleanupAudio]);
 
-    return { connect, disconnect, connected, volume, transcript };
+    return { connect, disconnect, connected, volume, transcript, isAgentMuted, setIsAgentMuted };
 }

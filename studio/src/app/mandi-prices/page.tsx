@@ -277,7 +277,7 @@ export default function MandiPricesPage() {
                                 <div>
                                     <p className="text-[12px] font-bold text-[#113A28]">Blockchain-Secured Trading</p>
                                     <p className="text-[10px] font-medium text-[#8DA697] leading-relaxed mt-0.5">
-                                        All trades on DrFarm are secured via smart contract escrow. Payments are locked until delivery is verified, protecting both farmers and buyers.
+                                        All trades on Khetsetu are secured via smart contract escrow. Payments are locked until delivery is verified, protecting both farmers and buyers.
                                     </p>
                                 </div>
                             </motion.div>

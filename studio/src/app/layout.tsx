@@ -13,13 +13,16 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Drfarm - Modern Farming Assistant',
+  title: 'Khetsetu - Modern Farming Assistant',
   description: 'AI-powered plant analysis, location-based farming alerts, and marketplace for farmers.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Drfarm',
+    title: 'Khetsetu',
+  },
+  icons: {
+    apple: '/apple-touch-icon.png',
   },
   formatDetection: {
     telephone: false,
@@ -45,17 +48,6 @@ export default function RootLayout({
           </main>
           <Navbar />
           <Toaster />
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                if ('serviceWorker' in navigator) {
-                  window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/sw.js');
-                  });
-                }
-              `
-            }}
-          />
         </LanguageProvider>
       </body>
     </html>

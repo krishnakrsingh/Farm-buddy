@@ -4,9 +4,17 @@ export class AudioStreamer {
     public audioQueue: Float32Array[] = [];
     public isPlaying = false;
     public startTime = 0;
+    public isMuted = false;
 
     constructor() {
         // Don't create AudioContext here — browsers require user interaction first
+    }
+
+    setMuted(muted: boolean) {
+        this.isMuted = muted;
+        if (this.gainNode) {
+            this.gainNode.gain.value = muted ? 0 : 1;
+        }
     }
 
     private ensureContext(): AudioContext {
@@ -15,6 +23,7 @@ export class AudioStreamer {
                 sampleRate: 24000, // Gemini Live output is 24kHz
             });
             this.gainNode = this.audioContext.createGain();
+            this.gainNode.gain.value = this.isMuted ? 0 : 1;
             this.gainNode.connect(this.audioContext.destination);
         }
         return this.audioContext;

@@ -108,7 +108,7 @@ export default function ChatPage() {
                     </Link>
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[#DBEDD9] flex items-center justify-center border border-[#B7D8C6] overflow-hidden">
-                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=drfarm3&backgroundColor=transparent" alt="AI" className="w-8 h-8 object-contain" />
+                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=khetsetu3&backgroundColor=transparent" alt="AI" className="w-8 h-8 object-contain" />
                         </div>
                         <div className="flex flex-col">
                             <h1 className="text-[17px] font-extrabold text-[#113A28] leading-none">{t("dr_farm_ai")}</h1>
