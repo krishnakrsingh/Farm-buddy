@@ -92,10 +92,27 @@
 @layer base {
   * {
     @apply border-border;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
   }
 
   body {
     @apply bg-background text-foreground font-body;
+    /* Prevent text selection and overscroll for native feel */
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Allow selection and interaction where explicitly needed like inputs */
+  input, textarea, [contenteditable="true"], .selectable {
+    -webkit-user-select: auto;
+    user-select: auto;
   }
 
   h1,

@@ -1,13 +1,29 @@
-
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Navbar } from '@/components/Navbar';
 import { LanguageProvider } from '@/lib/LanguageContext';
 
+export const viewport: Viewport = {
+  themeColor: '#1d8f54', /* matches primary var */
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: 'Drfarm - Modern Farming Assistant',
   description: 'AI-powered plant analysis, location-based farming alerts, and marketplace for farmers.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Drfarm',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
@@ -29,6 +45,17 @@ export default function RootLayout({
           </main>
           <Navbar />
           <Toaster />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js');
+                  });
+                }
+              `
+            }}
+          />
         </LanguageProvider>
       </body>
     </html>
