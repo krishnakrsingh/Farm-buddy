@@ -5,10 +5,6 @@ import { GoogleGenAI } from "@google/genai";
 import { AudioRecorder } from "@/lib/audio-recorder";
 import { AudioStreamer } from "@/lib/audio-streamer";
 
-/**
- * Configuration for the live session.
- * These fields map directly to the SDK's LiveConnectConfig.
- */
 export type LiveConfig = {
     model: string;
     generationConfig?: {
@@ -32,6 +28,33 @@ export type ConnectOptions = {
     accessToken?: string;
 };
 
+interface LiveMessagePart {
+    inlineData?: {
+        data: string;
+        mimeType: string;
+    };
+    text?: string;
+}
+
+interface LiveServerContent {
+    modelTurn?: {
+        parts?: LiveMessagePart[];
+    };
+}
+
+interface LiveMessage {
+    setupComplete?: boolean;
+    serverContent?: LiveServerContent;
+}
+
+interface LiveSession {
+    close: () => void;
+    sendRealtimeInput: (input: {
+        audio?: { data: string; mimeType: string };
+        media?: { data: string; mimeType: string };
+    }) => void;
+}
+
 export function useLiveApi() {
     const [connected, setConnected] = useState(false);
     const [volume, setVolume] = useState(0);
@@ -46,14 +69,12 @@ export function useLiveApi() {
         }
     }, [isAgentMuted]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sessionRef = useRef<any>(null);
+    const sessionRef = useRef<LiveSession | null>(null);
     const audioRecorderRef = useRef<AudioRecorder | null>(null);
     const audioStreamerRef = useRef<AudioStreamer | null>(null);
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const videoIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Cleanup helper
     const cleanupAudio = useCallback(() => {
         if (audioRecorderRef.current) {
             audioRecorderRef.current.stop();
@@ -74,7 +95,7 @@ export function useLiveApi() {
             try {
                 sessionRef.current.close();
             } catch {
-                // ignore
+                // ignore close errors
             }
             sessionRef.current = null;
         }
@@ -84,87 +105,68 @@ export function useLiveApi() {
         setTranscript("");
     }, [cleanupAudio]);
 
-    /**
-     * Connect to the Gemini Live API using the official @google/genai SDK.
-     * The SDK handles WebSocket URL construction, auth, setup message format,
-     * and the correct endpoint (BidiGenerateContentConstrained for ephemeral tokens).
-     */
     const connect = useCallback(
         async (
             config: LiveConfig,
             videoElement: HTMLVideoElement | null,
             auth: ConnectOptions
         ) => {
-            // Disconnect any existing session first
             if (sessionRef.current) {
-                try { sessionRef.current.close(); } catch { /* ignore */ }
+                try {
+                    sessionRef.current.close();
+                } catch {
+                    // ignore
+                }
                 sessionRef.current = null;
             }
             cleanupAudio();
 
-            // Determine the API key (either regular API key or ephemeral token)
             const apiKey = auth.accessToken || auth.apiKey;
             if (!apiKey) {
                 throw new Error("No API key or ephemeral token provided.");
             }
 
-            // Create a fresh SDK client with the ephemeral token
-            // Ephemeral tokens require v1alpha
             const ai = new GoogleGenAI({
                 apiKey: apiKey,
                 httpOptions: { apiVersion: "v1alpha" },
             });
 
-            // Initialize Audio Streamer (for playback of AI responses)
             const streamer = new AudioStreamer();
             audioStreamerRef.current = streamer;
             await streamer.resume();
 
-            // Build the SDK's LiveConnectConfig
-            // The SDK expects a flat config (not nested under generationConfig)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const sdkConfig: any = {};
+            const sdkConfig: Record<string, unknown> = {};
 
-            // responseModalities goes at the top level of config
             if (config.generationConfig?.responseModalities) {
                 sdkConfig.responseModalities = config.generationConfig.responseModalities;
             }
 
-            // speechConfig goes at the top level of config
             if (config.generationConfig?.speechConfig) {
                 sdkConfig.speechConfig = config.generationConfig.speechConfig;
             }
 
-            // systemInstruction goes at the top level of config
             if (config.systemInstruction) {
                 sdkConfig.systemInstruction = config.systemInstruction;
             }
 
-            // Use the official SDK's live.connect() — this handles everything:
-            // - Correct WebSocket URL (BidiGenerateContentConstrained for ephemeral tokens)
-            // - Correct auth parameter (access_token= for ephemeral tokens)
-            // - Correct setup message format
-            // - v1alpha API version
             const session = await ai.live.connect({
                 model: config.model,
                 config: sdkConfig,
                 callbacks: {
-                    onopen: () => {
-                    },
+                    onopen: () => {},
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onmessage: (msg: any) => {
-                        // Handle setup complete
                         if (msg.setupComplete) {
                             return;
                         }
 
-                        // Handle audio responses from AI
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const serverContent = msg.serverContent as any;
+                        const serverContent = msg.serverContent;
                         if (serverContent?.modelTurn?.parts) {
                             for (const part of serverContent.modelTurn.parts) {
-                                if (part.inlineData?.data && part.inlineData?.mimeType?.includes("audio")) {
-                                    // Decode base64 audio and play it
+                                if (
+                                    part.inlineData?.data &&
+                                    part.inlineData?.mimeType?.includes("audio")
+                                ) {
                                     try {
                                         const base64 = part.inlineData.data;
                                         const binaryString = atob(base64);
@@ -182,10 +184,9 @@ export function useLiveApi() {
                                     }
                                 }
                                 if (part.text) {
+                                    const textPart: string = part.text;
                                     setTranscript((prev) => {
-                                        // Append new text, keeping a reasonable history
-                                        const newText = prev ? prev + " " + part.text : part.text;
-                                        // Limit to last ~2000 characters to prevent memory issues
+                                        const newText = prev ? `${prev} ${textPart}` : textPart;
                                         return newText.length > 2000 ? newText.slice(-2000) : newText;
                                     });
                                 }
@@ -195,34 +196,33 @@ export function useLiveApi() {
                     onerror: (e: Event) => {
                         console.error("[useLiveApi] WebSocket error:", e);
                     },
-                    onclose: (_e: CloseEvent) => {
+                    onclose: () => {
                         setConnected(false);
                         cleanupAudio();
                     },
                 },
             });
 
-            sessionRef.current = session;
+            sessionRef.current = session as unknown as LiveSession;
             setConnected(true);
 
-            // Now set up audio/video input streaming
             if (videoElement) {
                 videoRef.current = videoElement;
                 const stream = videoElement.srcObject as MediaStream;
 
                 if (stream) {
-                    // Initialize Audio Recorder — captures mic and sends to Gemini
                     audioRecorderRef.current = new AudioRecorder((pcmData) => {
-                        // Convert Int16Array PCM data to base64 string.
-                        // The SDK expects { data: base64, mimeType: string }, NOT a browser Blob.
-                        const bytes = new Uint8Array(pcmData.buffer, pcmData.byteOffset, pcmData.byteLength);
-                        let binary = '';
+                        const bytes = new Uint8Array(
+                            pcmData.buffer,
+                            pcmData.byteOffset,
+                            pcmData.byteLength
+                        );
+                        let binary = "";
                         for (let i = 0; i < bytes.length; i++) {
                             binary += String.fromCharCode(bytes[i]);
                         }
                         const base64Audio = btoa(binary);
 
-                        // Use SDK's sendRealtimeInput method
                         try {
                             sessionRef.current?.sendRealtimeInput({
                                 audio: {
@@ -234,7 +234,6 @@ export function useLiveApi() {
                             console.error("[useLiveApi] Audio send error:", e);
                         }
 
-                        // Volume meter
                         let sum = 0;
                         for (let i = 0; i < pcmData.length; i++) {
                             sum += pcmData[i] * pcmData[i];
@@ -246,7 +245,6 @@ export function useLiveApi() {
                     await audioRecorderRef.current.start(stream);
                 }
 
-                // Video Frame Loop — send frames at ~1 FPS
                 const sendFrame = () => {
                     const video = videoRef.current;
                     if (!video || !sessionRef.current) return;
@@ -259,27 +257,30 @@ export function useLiveApi() {
                     const ctx = canvas.getContext("2d");
                     if (ctx) {
                         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        canvas.toBlob(async (blob) => {
-                            if (!blob) return;
-                            try {
-                                // Convert browser Blob to base64 for the SDK
-                                const arrayBuffer = await blob.arrayBuffer();
-                                const uint8 = new Uint8Array(arrayBuffer);
-                                let binary = '';
-                                for (let i = 0; i < uint8.length; i++) {
-                                    binary += String.fromCharCode(uint8[i]);
+                        canvas.toBlob(
+                            async (blob) => {
+                                if (!blob) return;
+                                try {
+                                    const arrayBuffer = await blob.arrayBuffer();
+                                    const uint8 = new Uint8Array(arrayBuffer);
+                                    let binary = "";
+                                    for (let i = 0; i < uint8.length; i++) {
+                                        binary += String.fromCharCode(uint8[i]);
+                                    }
+                                    const base64 = btoa(binary);
+                                    sessionRef.current?.sendRealtimeInput({
+                                        media: {
+                                            data: base64,
+                                            mimeType: "image/jpeg",
+                                        },
+                                    });
+                                } catch (e) {
+                                    console.error("[useLiveApi] Video send error:", e);
                                 }
-                                const base64 = btoa(binary);
-                                sessionRef.current?.sendRealtimeInput({
-                                    media: {
-                                        data: base64,
-                                        mimeType: "image/jpeg",
-                                    },
-                                });
-                            } catch (e) {
-                                console.error("[useLiveApi] Video send error:", e);
-                            }
-                        }, "image/jpeg", 0.7);
+                            },
+                            "image/jpeg",
+                            0.7
+                        );
                     }
                 };
 
@@ -289,11 +290,14 @@ export function useLiveApi() {
         [cleanupAudio]
     );
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (sessionRef.current) {
-                try { sessionRef.current.close(); } catch { /* ignore */ }
+                try {
+                    sessionRef.current.close();
+                } catch {
+                    // ignore
+                }
             }
             cleanupAudio();
         };

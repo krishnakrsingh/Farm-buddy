@@ -1,16 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ComponentType } from "react";
 import { CloudRain, Droplets, Wind, Sun, Cloud, Moon, CloudSnow, CloudLightning, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
+
+interface IconProps {
+    size?: number | string;
+    strokeWidth?: number | string;
+    className?: string;
+}
 
 type HourlyData = {
     timeKey: string;
     time: string;
     temp: number;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    icon: any;
+    icon: ComponentType<IconProps>;
 };
 
 type WeatherInfo = {
@@ -23,7 +28,20 @@ type WeatherInfo = {
     isDay: boolean;
 };
 
-function getWeatherIcon(condition: string, isDay: boolean) {
+interface ForecastHour {
+    time_epoch: number;
+    temp_c: number;
+    is_day: number;
+    condition: {
+        text: string;
+    };
+}
+
+interface ForecastDay {
+    hour: ForecastHour[];
+}
+
+function getWeatherIcon(condition: string, isDay: boolean): ComponentType<IconProps> {
     const c = condition.toLowerCase();
     if (c.includes("rain") || c.includes("drizzle") || c.includes("shower")) return CloudRain;
     if (c.includes("snow") || c.includes("sleet") || c.includes("ice")) return CloudSnow;
@@ -43,36 +61,32 @@ export function AdvancedWeatherWidget() {
                 const res = await fetch(`/api/weather?q=${encodeURIComponent(query)}`);
                 if (!res.ok) throw new Error("Weather fetch failed");
                 const data = await res.json();
-                
+
                 const current = data.current;
-                const forecastDays = data.forecast.forecastday;
-                
-                // Collect hours from today and tomorrow
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const allHours: any[] = [];
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                forecastDays.forEach((day: any) => {
+                const forecastDays: ForecastDay[] = data.forecast?.forecastday || [];
+
+                const allHours: ForecastHour[] = [];
+                forecastDays.forEach((day) => {
                     allHours.push(...day.hour);
                 });
-                
+
                 const nowEpoch = current.last_updated_epoch;
-                // Find next 5 hours (including current hour)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const futureHours = allHours.filter((h: any) => h.time_epoch >= nowEpoch - 3600).slice(0, 5);
-                
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const hourly: HourlyData[] = futureHours.map((h: any, index: number) => {
+                const futureHours = allHours
+                    .filter((h) => h.time_epoch >= nowEpoch - 3600)
+                    .slice(0, 5);
+
+                const hourly: HourlyData[] = futureHours.map((h, index) => {
                     const date = new Date(h.time_epoch * 1000);
                     const hours = date.getHours();
-                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    const ampm = hours >= 12 ? "PM" : "AM";
                     const displayHours = hours % 12 || 12;
                     const timeStr = `${displayHours} ${ampm}`;
-                    
+
                     return {
                         timeKey: index === 0 ? "now" : "",
                         time: timeStr,
                         temp: Math.round(h.temp_c),
-                        icon: getWeatherIcon(h.condition.text, h.is_day === 1)
+                        icon: getWeatherIcon(h.condition.text, h.is_day === 1),
                     };
                 });
 
@@ -83,7 +97,7 @@ export function AdvancedWeatherWidget() {
                     humidity: current.humidity,
                     windKph: Math.round(current.wind_kph),
                     hourly,
-                    isDay: current.is_day === 1
+                    isDay: current.is_day === 1,
                 });
             } catch (e) {
                 console.error("Failed to load weather:", e);
@@ -93,7 +107,7 @@ export function AdvancedWeatherWidget() {
         };
 
         if (!navigator.geolocation) {
-            fetchWeather("New Delhi"); // Fallback
+            fetchWeather("New Delhi");
             return;
         }
 
@@ -102,7 +116,7 @@ export function AdvancedWeatherWidget() {
                 fetchWeather(`${position.coords.latitude},${position.coords.longitude}`);
             },
             () => {
-                fetchWeather("New Delhi"); // Fallback on permission denied
+                fetchWeather("New Delhi");
             }
         );
     }, []);
@@ -123,12 +137,19 @@ export function AdvancedWeatherWidget() {
             <div className="flex justify-between items-start mb-2.5">
                 <div>
                     <div className="flex items-center gap-2">
-                        <span className="text-[32px] font-black tracking-tighter text-[#184F35] leading-none">{weather.temp}°</span>
+                        <span className="text-[32px] font-black tracking-tighter text-[#184F35] leading-none">
+                            {weather.temp}°
+                        </span>
                         <div className="flex flex-col justify-center max-w-[120px]">
-                            <span className="text-[13px] font-extrabold text-[#113A28] leading-tight truncate" title={weather.condition}>
+                            <span
+                                className="text-[13px] font-extrabold text-[#113A28] leading-tight truncate"
+                                title={weather.condition}
+                            >
                                 {weather.condition}
                             </span>
-                            <span className="text-[10px] font-bold text-[#8DA697]">{t("feels")} {weather.feelsLike}°</span>
+                            <span className="text-[10px] font-bold text-[#8DA697]">
+                                {t("feels")} {weather.feelsLike}°
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -144,8 +165,12 @@ export function AdvancedWeatherWidget() {
                         <Droplets size={14} strokeWidth={2.5} />
                     </div>
                     <div className="truncate">
-                        <p className="text-[9px] font-bold text-[#6C8576] leading-none">{t("moisture")}</p>
-                        <p className="text-[12px] font-extrabold text-[#113A28] leading-tight mt-0.5">{weather.humidity}%</p>
+                        <p className="text-[9px] font-bold text-[#6C8576] leading-none">
+                            {t("moisture")}
+                        </p>
+                        <p className="text-[12px] font-extrabold text-[#113A28] leading-tight mt-0.5">
+                            {weather.humidity}%
+                        </p>
                     </div>
                 </div>
                 <div className="bg-[#F4F9F4] border border-[#E9F4EC] rounded-[16px] p-1.5 flex items-center gap-2">
@@ -154,7 +179,9 @@ export function AdvancedWeatherWidget() {
                     </div>
                     <div className="truncate">
                         <p className="text-[9px] font-bold text-[#6C8576] leading-none">{t("wind")}</p>
-                        <p className="text-[12px] font-extrabold text-[#113A28] leading-tight mt-0.5">{weather.windKph} <span className="text-[9px]">km/h</span></p>
+                        <p className="text-[12px] font-extrabold text-[#113A28] leading-tight mt-0.5">
+                            {weather.windKph} <span className="text-[9px]">km/h</span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -168,16 +195,26 @@ export function AdvancedWeatherWidget() {
                         const displayTime = isNow ? t("now") : item.time;
                         return (
                             <div key={index} className="flex flex-col items-center gap-1.5 min-w-[2.2rem]">
-                                <span className={cn("text-[8px] sm:text-[9px] font-bold whitespace-nowrap", isNow ? "text-[#184F35]" : "text-[#8DA697]")}>{displayTime}</span>
-                                <div className={cn(
-                                    "p-1.5 rounded-[10px]",
-                                    isNow ? "bg-white shadow-sm" : ""
-                                )}>
-                                    <Icon size={14} strokeWidth={2.5} className={cn(isNow ? "text-[#F29C38]" : "text-[#A0B8AA]")} />
+                                <span
+                                    className={cn(
+                                        "text-[8px] sm:text-[9px] font-bold whitespace-nowrap",
+                                        isNow ? "text-[#184F35]" : "text-[#8DA697]"
+                                    )}
+                                >
+                                    {displayTime}
+                                </span>
+                                <div className={cn("p-1.5 rounded-[10px]", isNow ? "bg-white shadow-sm" : "")}>
+                                    <Icon
+                                        size={14}
+                                        strokeWidth={2.5}
+                                        className={cn(isNow ? "text-[#F29C38]" : "text-[#A0B8AA]")}
+                                    />
                                 </div>
-                                <span className="text-[11px] font-extrabold text-[#113A28]">{item.temp}°</span>
+                                <span className="text-[11px] font-extrabold text-[#113A28]">
+                                    {item.temp}°
+                                </span>
                             </div>
-                        )
+                        );
                     })}
                 </div>
             </div>
