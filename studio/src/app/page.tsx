@@ -4,9 +4,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { AdvancedWeatherWidget } from "@/components/AdvancedWeatherWidget";
 import { Header } from "@/components/Header";
+import { HerdSnapshotCard } from "@/components/HerdSnapshotCard";
 import { AssistantCard } from "@/components/AssistantCard";
+import { CowDetailModal } from "@/components/CowDetailModal";
 import { useLiveApi } from "@/hooks/use-live-api";
 import { useLanguage } from "@/lib/LanguageContext";
+import { useHerdData } from "@/hooks/useHerdData";
 
 type AuthInfo = {
     ephemeralToken?: string;
@@ -24,6 +27,14 @@ export default function HomePage() {
 
     const { language, t } = useLanguage();
     const { connect, disconnect, connected, volume, transcript } = useLiveApi();
+
+    const {
+        stats,
+        selectedCow,
+        setSelectedCowId,
+        holdMilk,
+        triggerDemoEscalation,
+    } = useHerdData();
 
     const fetchToken = useCallback(async (): Promise<AuthInfo | null> => {
         try {
@@ -117,11 +128,10 @@ export default function HomePage() {
                     systemInstruction: {
                         parts: [
                             {
-                                text: `You are an expert AI agriculture assistant for Khetsetu. 
-                          You must ONLY speak in the ${language.name} language. 
-                          Always communicate in ${language.name} (${language.native}). 
-                          Be highly concise, friendly, and practical. 
-                          Provide helpful farming advice, weather tips, and crop health information.`,
+                                text: `You are PashuAI, an expert AI herd health advisor for a 1000-cow dairy operation using ESP32-C3 neck tags (DS18B20 temp + MAX30102 PPG) feeding a 6-algorithm edge pipeline. 
+                          You must ONLY speak in ${language.name}. 
+                          Be highly concise, actionable, and friendly. 
+                          Explain pipeline breaches like Z-score anomalies, CUSUM flags, and milk segregation protocols.`,
                             },
                         ],
                     },
@@ -149,18 +159,18 @@ export default function HomePage() {
     }, [connected, isStreaming]);
 
     return (
-        <div className="min-h-screen bg-[#DBEDD9] text-[#1B4332] pb-32 relative font-sans overflow-x-hidden selection:bg-[#B7D8C6]">
+        <div className="min-h-screen bg-[#E7F0DE] text-[#1A2E22] pb-36 relative font-sans overflow-x-hidden selection:bg-[#B7D8C6]">
             <video ref={audioRef} autoPlay playsInline muted className="hidden" />
 
-            <div className="max-w-md mx-auto relative pt-10 px-5 space-y-7 z-10 pb-10">
-                {/* Header with Language Selector */}
-                <Header userName="krishna" />
+            <div className="max-w-md mx-auto relative pt-8 px-5 space-y-6 z-10 pb-10">
+                {/* Header with Herd Manager status & Gateway Modal */}
+                <Header userName="Krishna" />
 
-                {/* Weather Widget Section */}
+                {/* Weather Updates Section with THI Heat Stress Risk */}
                 <motion.div
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.2 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
                 >
                     <div className="px-1 mb-2">
                         <h2 className="text-[17px] font-extrabold text-[#113A28]">
@@ -170,7 +180,19 @@ export default function HomePage() {
                     <AdvancedWeatherWidget />
                 </motion.div>
 
-                {/* Dr. Farm AI Interactive Voice Assistant Card */}
+                {/* New Herd Snapshot Card (1000 Cows, 987 Online, Flagged, Cloud Escalated) */}
+                <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.2 }}
+                >
+                    <HerdSnapshotCard
+                        stats={stats}
+                        onTriggerDemo={triggerDemoEscalation}
+                    />
+                </motion.div>
+
+                {/* PashuAI Interactive AI Assistant Card */}
                 <AssistantCard
                     connected={connected}
                     isStreaming={isStreaming}
@@ -181,6 +203,15 @@ export default function HomePage() {
                     onToggleLive={toggleLive}
                 />
             </div>
+
+            {/* Cow Detail Modal */}
+            {selectedCow && (
+                <CowDetailModal
+                    cow={selectedCow}
+                    onClose={() => setSelectedCowId(null)}
+                    onHoldMilk={holdMilk}
+                />
+            )}
         </div>
     );
 }

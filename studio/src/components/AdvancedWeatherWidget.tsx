@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, ComponentType } from "react";
-import { CloudRain, Droplets, Wind, Sun, Cloud, Moon, CloudSnow, CloudLightning, Loader2 } from "lucide-react";
+import { CloudRain, Droplets, Wind, Sun, Cloud, Moon, CloudSnow, CloudLightning, Loader2, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/LanguageContext";
 
@@ -65,6 +65,18 @@ const FALLBACK_WEATHER_INFO: WeatherInfo = {
         { timeKey: "", time: "8 PM", temp: 25, icon: Moon },
     ],
 };
+
+// Calculate THI (Temperature-Humidity Index) for cattle heat stress
+function calculateTHI(tempC: number, rh: number): { thi: number; level: "Low" | "Moderate" | "High"; color: string; badgeBg: string } {
+    const thi = 0.8 * tempC + (rh * (tempC - 14.3)) / 100 + 46.4;
+    if (thi >= 78) {
+        return { thi: Math.round(thi), level: "High", color: "text-red-700", badgeBg: "bg-red-50 border-red-200" };
+    } else if (thi >= 72) {
+        return { thi: Math.round(thi), level: "Moderate", color: "text-[#D97706]", badgeBg: "bg-[#FFF8DF] border-[#FFEBB3]" };
+    } else {
+        return { thi: Math.round(thi), level: "Low", color: "text-[#3FA65A]", badgeBg: "bg-[#F4F9F4] border-[#E9F4EC]" };
+    }
+}
 
 export function AdvancedWeatherWidget() {
     const { t } = useLanguage();
@@ -151,9 +163,10 @@ export function AdvancedWeatherWidget() {
     }
 
     const MainIcon = getWeatherIcon(weather.condition, weather.isDay);
+    const thiInfo = calculateTHI(weather.temp, weather.humidity);
 
     return (
-        <div className="bg-white text-[#113A28] rounded-[24px] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.04)] relative overflow-hidden border border-[#E9F4EC]">
+        <div className="bg-white text-[#113A28] rounded-[24px] p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.04)] relative overflow-hidden border border-[#E9F4EC]">
             {/* Header */}
             <div className="flex justify-between items-start mb-2.5">
                 <div>
@@ -161,7 +174,7 @@ export function AdvancedWeatherWidget() {
                         <span className="text-[32px] font-black tracking-tighter text-[#184F35] leading-none">
                             {weather.temp}°
                         </span>
-                        <div className="flex flex-col justify-center max-w-[120px]">
+                        <div className="flex flex-col justify-center max-w-[140px]">
                             <span
                                 className="text-[13px] font-extrabold text-[#113A28] leading-tight truncate"
                                 title={weather.condition}
@@ -174,9 +187,22 @@ export function AdvancedWeatherWidget() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-[#FFF4E5] p-2 rounded-[14px] shadow-sm flex-shrink-0">
-                    <MainIcon size={20} strokeWidth={2.5} className="text-[#F29C38]" />
+                <div className="flex flex-col items-end gap-1">
+                    <div className="bg-[#FFF4E5] p-2 rounded-[14px] shadow-sm flex-shrink-0">
+                        <MainIcon size={20} strokeWidth={2.5} className="text-[#F29C38]" />
+                    </div>
                 </div>
+            </div>
+
+            {/* Derived THI Heat Stress Risk Chip */}
+            <div className={`mb-2.5 px-3 py-1.5 rounded-[12px] border ${thiInfo.badgeBg} flex items-center justify-between`}>
+                <div className="flex items-center gap-1.5">
+                    <Flame size={14} className={thiInfo.color} />
+                    <span className="text-[11px] font-bold text-[#113A28]">
+                        Heat stress risk: <span className={`font-black ${thiInfo.color}`}>{thiInfo.level}</span>
+                    </span>
+                </div>
+                <span className="text-[10px] font-bold text-[#8DA697]">THI: {thiInfo.thi}</span>
             </div>
 
             {/* Vital Stats */}
