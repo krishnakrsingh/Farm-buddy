@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from "react";
 import { ArrowLeft, RefreshCw, Clock, Sparkles, Shield, Search } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLanguage } from "@/lib/LanguageContext";
 import { ALL_SCHEMES, DEFAULT_PROFILE, type UserProfile, type Scheme } from "@/lib/schemes-data";
 import { getEligibleSchemes } from "@/lib/schemes-engine";
 
@@ -15,7 +14,6 @@ import { ApplicationGuideModal } from "@/components/schemes/ApplicationGuideModa
 import { AiExplainerModal } from "@/components/schemes/AiExplainerModal";
 
 export default function SchemesPage() {
-  const { t } = useLanguage();
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);

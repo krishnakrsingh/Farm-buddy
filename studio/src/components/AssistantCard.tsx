@@ -15,18 +15,22 @@ import { useLanguage } from "@/lib/LanguageContext";
 
 interface AssistantCardProps {
     connected: boolean;
+    isStreaming: boolean;
     volume: number;
     transcript?: string;
     isMicLoading: boolean;
     authError: string | null;
+    onToggleLive: () => void;
 }
 
 export function AssistantCard({
     connected,
+    isStreaming,
     volume,
     transcript,
     isMicLoading,
     authError,
+    onToggleLive,
 }: AssistantCardProps) {
     const { t } = useLanguage();
 
@@ -39,7 +43,11 @@ export function AssistantCard({
             <div className="bg-white rounded-[32px] p-4 shadow-[0_12px_32px_rgba(0,0,0,0.05)] border border-white">
                 <div className="flex items-start">
                     {/* Bot Avatar Box */}
-                    <div className="relative w-[110px] h-[130px] rounded-[24px] bg-[#F4F9F4] flex items-end justify-center overflow-hidden shrink-0 border border-[#E9F4EC]">
+                    <button
+                        onClick={onToggleLive}
+                        className="relative w-[110px] h-[130px] rounded-[24px] bg-[#F4F9F4] flex items-end justify-center overflow-hidden shrink-0 border border-[#E9F4EC] hover:opacity-90 transition-opacity active:scale-95 text-left"
+                        title={isStreaming ? "Click to disconnect" : "Click to start live voice AI"}
+                    >
                         <img
                             src="https://api.dicebear.com/7.x/bottts/svg?seed=khetsetu3&backgroundColor=transparent"
                             alt="Khetsetu AI"
@@ -48,9 +56,9 @@ export function AssistantCard({
 
                         {/* Online indicator */}
                         <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm shadow-sm rounded-full flex items-center gap-1 px-2 py-0.5 z-20">
-                            <div className="w-1.5 h-1.5 bg-[#4CAF50] rounded-full animate-pulse" />
+                            <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-[#4CAF50] animate-pulse" : "bg-orange-400"}`} />
                             <span className="text-[9px] font-bold text-[#184F35] uppercase tracking-wider">
-                                {t("online")}
+                                {connected ? t("online") : t("live")}
                             </span>
                         </div>
 
@@ -60,7 +68,7 @@ export function AssistantCard({
                                 className="absolute bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-[#4CAF50]/30 rounded-full blur-md z-0"
                             />
                         )}
-                    </div>
+                    </button>
 
                     {/* Content beside avatar */}
                     <div className="flex-1 ml-4 pt-1">

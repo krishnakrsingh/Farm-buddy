@@ -34,7 +34,7 @@ export class AudioRecorder {
             // Convert Float32 to Int16
             const int16Buffer = new Int16Array(inputBuffer.length);
             for (let i = 0; i < inputBuffer.length; i++) {
-                let s = Math.max(-1, Math.min(1, inputBuffer[i]));
+                const s = Math.max(-1, Math.min(1, inputBuffer[i]));
                 int16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
             }
             this.onData(int16Buffer);

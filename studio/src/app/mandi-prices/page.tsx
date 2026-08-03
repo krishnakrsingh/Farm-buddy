@@ -12,14 +12,11 @@ import { SupplyChainTimeline } from "@/components/mandi/SupplyChainTimeline";
 import { BuyerPanel } from "@/components/mandi/BuyerPanel";
 import { RentalMarketplace } from "@/components/mandi/RentalMarketplace";
 import { PostListingModal } from "@/components/mandi/PostListingModal";
-import { useLanguage } from "@/lib/LanguageContext";
 import Link from "next/link";
 
 type PageTab = "prices" | "marketplace";
 
 export default function MandiPricesPage() {
-    const { t } = useLanguage();
-
     // Tab state
     const [activeTab, setActiveTab] = useState<PageTab>("prices");
 

@@ -173,10 +173,12 @@ export default function HomePage() {
                 {/* Dr. Farm AI Interactive Voice Assistant Card */}
                 <AssistantCard
                     connected={connected}
+                    isStreaming={isStreaming}
                     volume={volume}
                     transcript={transcript}
                     isMicLoading={isMicLoading}
                     authError={authError}
+                    onToggleLive={toggleLive}
                 />
             </div>
         </div>

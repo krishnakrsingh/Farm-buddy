@@ -50,6 +50,22 @@ function getWeatherIcon(condition: string, isDay: boolean): ComponentType<IconPr
     return isDay ? Sun : Moon;
 }
 
+const FALLBACK_WEATHER_INFO: WeatherInfo = {
+    temp: 28,
+    condition: "Partly Cloudy",
+    feelsLike: 30,
+    humidity: 68,
+    windKph: 12,
+    isDay: true,
+    hourly: [
+        { timeKey: "now", time: "Now", temp: 28, icon: Sun },
+        { timeKey: "", time: "5 PM", temp: 29, icon: Sun },
+        { timeKey: "", time: "6 PM", temp: 28, icon: Cloud },
+        { timeKey: "", time: "7 PM", temp: 26, icon: Moon },
+        { timeKey: "", time: "8 PM", temp: 25, icon: Moon },
+    ],
+};
+
 export function AdvancedWeatherWidget() {
     const { t } = useLanguage();
     const [weather, setWeather] = useState<WeatherInfo | null>(null);
@@ -59,7 +75,11 @@ export function AdvancedWeatherWidget() {
         const fetchWeather = async (query: string) => {
             try {
                 const res = await fetch(`/api/weather?q=${encodeURIComponent(query)}`);
-                if (!res.ok) throw new Error("Weather fetch failed");
+                if (!res.ok) {
+                    console.warn("Weather route returned non-OK status. Using client fallback.");
+                    setWeather(FALLBACK_WEATHER_INFO);
+                    return;
+                }
                 const data = await res.json();
 
                 const current = data.current;
@@ -70,7 +90,7 @@ export function AdvancedWeatherWidget() {
                     allHours.push(...day.hour);
                 });
 
-                const nowEpoch = current.last_updated_epoch;
+                const nowEpoch = current?.last_updated_epoch || Math.floor(Date.now() / 1000);
                 const futureHours = allHours
                     .filter((h) => h.time_epoch >= nowEpoch - 3600)
                     .slice(0, 5);
@@ -91,16 +111,17 @@ export function AdvancedWeatherWidget() {
                 });
 
                 setWeather({
-                    temp: Math.round(current.temp_c),
-                    condition: current.condition.text,
-                    feelsLike: Math.round(current.feelslike_c),
-                    humidity: current.humidity,
-                    windKph: Math.round(current.wind_kph),
-                    hourly,
-                    isDay: current.is_day === 1,
+                    temp: Math.round(current?.temp_c ?? 28),
+                    condition: current?.condition?.text || "Partly Cloudy",
+                    feelsLike: Math.round(current?.feelslike_c ?? 30),
+                    humidity: current?.humidity ?? 68,
+                    windKph: Math.round(current?.wind_kph ?? 12),
+                    hourly: hourly.length > 0 ? hourly : FALLBACK_WEATHER_INFO.hourly,
+                    isDay: current?.is_day === 1,
                 });
             } catch (e) {
-                console.error("Failed to load weather:", e);
+                console.warn("Failed to load weather data from API:", e);
+                setWeather(FALLBACK_WEATHER_INFO);
             } finally {
                 setLoading(false);
             }
