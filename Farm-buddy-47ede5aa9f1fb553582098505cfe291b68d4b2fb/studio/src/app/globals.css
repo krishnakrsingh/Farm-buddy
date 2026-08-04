@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Premium Modern Farm App Theme */
+    --background: 140 20% 98%; /* Very soft mint/gray white */
+    --foreground: 140 10% 15%; /* Deep charcoal/green */
+    
+    --card: 0 0% 100%;
+    --card-foreground: 140 10% 15%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 140 10% 15%;
+    
+    --primary: 150 60% 45%; /* Vibrant Emerald Green */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 140 20% 92%; /* Subtle soft green */
+    --secondary-foreground: 150 70% 30%;
+    
+    --muted: 140 10% 94%;
+    --muted-foreground: 140 10% 45%;
+    
+    --accent: 40 90% 55%; /* Warm sunflower yellow for accents */
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 140 15% 90%;
+    --input: 140 15% 90%;
+    --ring: 150 60% 45%;
+    
+    --chart-1: 150 60% 45%;
+    --chart-2: 40 90% 55%;
+    --chart-3: 190 80% 45%;
+    --chart-4: 280 60% 60%;
+    --chart-5: 350 70% 60%;
+    
+    --radius: 1.25rem; /* Very soft, modern Apple-like corners */
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 140 10% 15%;
+    --sidebar-primary: 150 60% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 140 20% 92%;
+    --sidebar-accent-foreground: 150 70% 30%;
+    --sidebar-border: 140 15% 90%;
+    --sidebar-ring: 150 60% 45%;
+  }
+
+  .dark {
+    /* Premium Dark Mode */
+    --background: 140 10% 6%;
+    --foreground: 140 10% 90%;
+    
+    --card: 140 10% 10%;
+    --card-foreground: 140 10% 96%;
+    
+    --popover: 140 10% 10%;
+    --popover-foreground: 140 10% 96%;
+    
+    --primary: 150 50% 50%; /* Brighter emerald for dark mode */
+    --primary-foreground: 140 10% 6%;
+    
+    --secondary: 140 10% 16%;
+    --secondary-foreground: 140 10% 96%;
+    
+    --muted: 140 10% 16%;
+    --muted-foreground: 140 10% 60%;
+    
+    --accent: 40 90% 55%;
+    --accent-foreground: 140 10% 6%;
+    
+    --border: 140 10% 18%;
+    --input: 140 10% 18%;
+    --ring: 150 50% 50%;
+
+    --sidebar-background: 140 10% 10%;
+    --sidebar-foreground: 140 10% 90%;
+    --sidebar-primary: 150 50% 50%;
+    --sidebar-primary-foreground: 140 10% 6%;
+    --sidebar-accent: 140 10% 16%;
+    --sidebar-accent-foreground: 140 10% 96%;
+    --sidebar-border: 140 10% 18%;
+    --sidebar-ring: 150 50% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+    /* Prevent text selection and overscroll for native feel */
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Allow selection and interaction where explicitly needed like inputs */
+  input, textarea, [contenteditable="true"], .selectable {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-headline;
+  }
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

@@ -76,19 +76,6 @@ export default function LiveAnalysis() {
         setCameraLoading(true);
         setCameraError(null);
 
-        // Check if page is running in a Secure Context (HTTPS or localhost)
-        if (
-            typeof window !== "undefined" &&
-            !window.isSecureContext &&
-            window.location.hostname !== "localhost" &&
-            window.location.hostname !== "127.0.0.1"
-        ) {
-            setCameraError("Camera requires HTTPS on mobile devices. Please access via HTTPS or localhost.");
-            setIsVideoEnabled(false);
-            setCameraLoading(false);
-            return;
-        }
-
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             setCameraError("Camera access not supported on this browser.");
             setIsVideoEnabled(false);
@@ -105,11 +92,8 @@ export default function LiveAnalysis() {
             });
 
             let stream: MediaStream | null = null;
-            let isAudioOnly = false;
-            let isVideoOnly = false;
-
-            // Attempt 1: High quality video + audio with specified facingMode
             try {
+                // First attempt: High quality video + audio
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: { ideal: mode },
@@ -119,61 +103,25 @@ export default function LiveAnalysis() {
                     audio: true,
                 });
             } catch {
-                // Attempt 2: Basic video with facingMode + audio
                 try {
+                    // Second attempt: Basic video + audio
                     stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: { ideal: mode } },
+                        video: true,
                         audio: true,
                     });
                 } catch {
-                    // Attempt 3: Default video + audio
-                    try {
-                        stream = await navigator.mediaDevices.getUserMedia({
-                            video: true,
-                            audio: true,
-                        });
-                    } catch {
-                        // Attempt 4: Video ONLY (in case microphone is denied/unavailable)
-                        try {
-                            stream = await navigator.mediaDevices.getUserMedia({
-                                video: { facingMode: { ideal: mode } },
-                                audio: false,
-                            });
-                            isVideoOnly = true;
-                        } catch {
-                            // Attempt 5: Any video ONLY
-                            try {
-                                stream = await navigator.mediaDevices.getUserMedia({
-                                    video: true,
-                                    audio: false,
-                                });
-                                isVideoOnly = true;
-                            } catch {
-                                // Attempt 6: Audio ONLY fallback
-                                stream = await navigator.mediaDevices.getUserMedia({
-                                    video: false,
-                                    audio: true,
-                                });
-                                isAudioOnly = true;
-                            }
-                        }
-                    }
+                    // Third attempt: Audio only fallback if camera is blocked/unavailable
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: false,
+                        audio: true,
+                    });
+                    setIsVideoEnabled(false);
+                    setCameraError("Camera unavailable. Running in Audio-Only mode.");
                 }
             }
 
             setVideoStream(stream);
             setCameraLoading(false);
-
-            if (isAudioOnly) {
-                setIsVideoEnabled(false);
-                setCameraError("Camera permission denied or camera in use. Running in Audio-Only mode.");
-            } else if (isVideoOnly) {
-                setIsVideoEnabled(true);
-                setCameraError("Microphone permission denied. Running in Video-Only mode.");
-            } else {
-                setIsVideoEnabled(true);
-                setCameraError(null);
-            }
 
             if (videoRef.current && stream) {
                 videoRef.current.srcObject = stream;
@@ -182,17 +130,7 @@ export default function LiveAnalysis() {
             console.error("Camera & Audio error:", err);
             setCameraLoading(false);
             setIsVideoEnabled(false);
-
-            const errorName = (err as { name?: string })?.name || "";
-            if (errorName === "NotAllowedError" || errorName === "PermissionDeniedError") {
-                setCameraError("Camera/Microphone permission denied. Please allow access in browser site settings.");
-            } else if (errorName === "NotReadableError" || errorName === "TrackStartError") {
-                setCameraError("Camera is in use by another app (e.g. WhatsApp). Close it and retry.");
-            } else if (errorName === "NotFoundError" || errorName === "DevicesNotFoundError") {
-                setCameraError("No camera device found on this phone.");
-            } else {
-                setCameraError("Camera/Microphone permission denied or device not found.");
-            }
+            setCameraError("Camera/Microphone permission denied or device not found.");
         }
     }, [facingMode]);
 
@@ -246,13 +184,13 @@ export default function LiveAnalysis() {
             try {
                 const connectOpts = buildConnectOptions(currentAuth);
 
-                const langInstruction = `You are an expert AI agricultural & livestock vision specialist for Khetsetu / Farm Buddy. Please strictly follow these rules:
-- Assess crops (plant diseases, pests, leaf issues) AND livestock (cattle body condition score BCS, locomotion/gait, rumen fill, heat/health signs).
-- Always respond ONLY in Hinglish (Hindi written in English letters).
-- Keep tone friendly, simple, and farmer-friendly (no heavy jargon).
-- Be concise, highly informative, and actionable.
-- Focus on what is directly visible in the live camera video or described by the user.
-- Only speak what is relevant, nothing extra, no unnecessary fluff.`;
+                const langInstruction = `You are an expert plant doctor and farmer friend for Khetsetu. Please strictly follow these rules:
+- Always respond ONLY in Hinglish (Hindi written in English letters)
+- Keep tone friendly, simple, and farmer-friendly (no heavy jargon)
+- Be concise but informative
+- If unsure, say "possible issue" instead of guessing confidently
+- Focus on what is visible in the video or audio description provided
+- Only speak what is asked, nothing extra, no bluff or unnecessary words.`;
 
                 const config: Parameters<typeof connect>[0] = {
                     model: "models/gemini-2.5-flash-native-audio-latest",

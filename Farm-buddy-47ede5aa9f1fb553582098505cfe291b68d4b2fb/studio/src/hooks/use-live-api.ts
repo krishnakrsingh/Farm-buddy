@@ -210,7 +210,7 @@ export function useLiveApi() {
                 videoRef.current = videoElement;
                 const stream = videoElement.srcObject as MediaStream;
 
-                if (stream && stream.getAudioTracks().length > 0) {
+                if (stream) {
                     audioRecorderRef.current = new AudioRecorder((pcmData) => {
                         const bytes = new Uint8Array(
                             pcmData.buffer,
