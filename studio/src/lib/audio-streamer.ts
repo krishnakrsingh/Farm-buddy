@@ -2,7 +2,6 @@ export class AudioStreamer {
     public audioContext: AudioContext | null = null;
     public gainNode: GainNode | null = null;
     public audioQueue: Float32Array[] = [];
-    public isPlaying = false;
     public startTime = 0;
     public isMuted = false;
 
@@ -19,7 +18,10 @@ export class AudioStreamer {
 
     private ensureContext(): AudioContext {
         if (!this.audioContext || this.audioContext.state === "closed") {
-            this.audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)({
+            const AudioCtx =
+                window.AudioContext ||
+                (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+            this.audioContext = new AudioCtx({
                 sampleRate: 24000, // Gemini Live output is 24kHz
             });
             this.gainNode = this.audioContext.createGain();
@@ -35,22 +37,17 @@ export class AudioStreamer {
             float32[i] = chunk[i] / 32768;
         }
         this.audioQueue.push(float32);
-        if (!this.isPlaying) {
-            this.playQueue();
-        }
+        this.scheduleQueue();
     }
 
-    async playQueue() {
-        this.isPlaying = true;
+    private async scheduleQueue() {
         const ctx = this.ensureContext();
-
         if (ctx.state === "suspended") {
             await ctx.resume();
         }
 
-        let nextTime = this.startTime;
-        if (nextTime < ctx.currentTime) {
-            nextTime = ctx.currentTime;
+        if (this.startTime < ctx.currentTime) {
+            this.startTime = ctx.currentTime;
         }
 
         while (this.audioQueue.length > 0) {
@@ -63,19 +60,8 @@ export class AudioStreamer {
             const source = ctx.createBufferSource();
             source.buffer = audioBuffer;
             source.connect(this.gainNode!);
-            source.start(nextTime);
-            nextTime += audioBuffer.duration;
-        }
-
-        this.startTime = nextTime;
-
-        if (nextTime > ctx.currentTime) {
-            setTimeout(() => {
-                if (this.audioQueue.length > 0) this.playQueue();
-                else this.isPlaying = false;
-            }, (nextTime - ctx.currentTime) * 1000);
-        } else {
-            this.isPlaying = false;
+            source.start(this.startTime);
+            this.startTime += audioBuffer.duration;
         }
     }
 
@@ -87,13 +73,10 @@ export class AudioStreamer {
     }
 
     stop() {
-        this.isPlaying = false;
         this.audioQueue = [];
         this.startTime = 0;
         if (this.audioContext && this.audioContext.state !== "closed") {
-            this.audioContext.close().catch(() => {
-                // Ignore close errors
-            });
+            this.audioContext.close().catch(() => {});
         }
         this.audioContext = null;
         this.gainNode = null;

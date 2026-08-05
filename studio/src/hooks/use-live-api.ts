@@ -109,7 +109,8 @@ export function useLiveApi() {
         async (
             config: LiveConfig,
             videoElement: HTMLVideoElement | null,
-            auth: ConnectOptions
+            auth: ConnectOptions,
+            options?: { isVideoEnabled?: boolean }
         ) => {
             if (sessionRef.current) {
                 try {
@@ -195,8 +196,11 @@ export function useLiveApi() {
                     },
                     onerror: (e: Event) => {
                         console.error("[useLiveApi] WebSocket error:", e);
+                        sessionRef.current = null;
+                        setConnected(false);
                     },
                     onclose: () => {
+                        sessionRef.current = null;
                         setConnected(false);
                         cleanupAudio();
                     },
@@ -212,6 +216,7 @@ export function useLiveApi() {
 
                 if (stream && stream.getAudioTracks().length > 0) {
                     audioRecorderRef.current = new AudioRecorder((pcmData) => {
+                        if (!sessionRef.current) return;
                         const bytes = new Uint8Array(
                             pcmData.buffer,
                             pcmData.byteOffset,
@@ -248,6 +253,7 @@ export function useLiveApi() {
                 const sendFrame = () => {
                     const video = videoRef.current;
                     if (!video || !sessionRef.current) return;
+                    if (options?.isVideoEnabled === false) return;
                     if (video.videoWidth === 0 || video.videoHeight === 0) return;
 
                     const canvas = document.createElement("canvas");
@@ -259,7 +265,7 @@ export function useLiveApi() {
                         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                         canvas.toBlob(
                             async (blob) => {
-                                if (!blob) return;
+                                if (!blob || !sessionRef.current) return;
                                 try {
                                     const arrayBuffer = await blob.arrayBuffer();
                                     const uint8 = new Uint8Array(arrayBuffer);

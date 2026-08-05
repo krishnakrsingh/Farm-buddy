@@ -202,6 +202,12 @@ export default function LiveAnalysis() {
     }, []);
 
     useEffect(() => {
+        if (videoRef.current && videoStream) {
+            videoRef.current.srcObject = videoStream;
+        }
+    }, [videoStream]);
+
+    useEffect(() => {
         return () => {
             if (videoStream) {
                 videoStream.getTracks().forEach((track) => track.stop());
@@ -266,7 +272,7 @@ export default function LiveAnalysis() {
                         parts: [{ text: langInstruction }],
                     },
                 };
-                await connect(config, videoRef.current, connectOpts);
+                await connect(config, videoRef.current, connectOpts, { isVideoEnabled });
             } catch (err: unknown) {
                 console.error("Connection error:", err);
                 setIsStreaming(false);
