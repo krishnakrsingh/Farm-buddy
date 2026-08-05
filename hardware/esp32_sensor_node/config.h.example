@@ -1,0 +1,44 @@
+// =====================================================
+// Farm-Buddy ESP32-C3 Super Mini — Sensor Node Config
+// =====================================================
+// Copy this file to "config.h" and fill in your values.
+// config.h is .gitignored — never commit real credentials!
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// ---- WiFi Settings ----
+#define WIFI_SSID     "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+
+// ---- Firebase Realtime Database ----
+// Your Firebase RTDB URL (from Firebase Console → Realtime Database)
+#define FIREBASE_HOST "vitalink-57fe2-default-rtdb.firebaseio.com"
+
+// Firebase Database Secret (optional, leave empty for test-mode rules)
+// Get from: Firebase Console → Project Settings → Service Accounts → Database secrets
+#define FIREBASE_AUTH ""
+
+// ---- Sensor Node Identity ----
+#define COW_ID        "014"
+#define TAG_ID        "TAG-8821-A"
+#define DEVICE_ID     "ESP32-C3-SUPERMINI-01"
+#define SHED_NAME     "Shed 1 (Milking Barn)"
+
+// ---- Timing ----
+#define SEND_INTERVAL_MS  2000   // Send data every 2 seconds
+#define SENSOR_READ_MS    100    // Read sensors every 100ms for averaging
+
+// ---- Pin Configuration (ESP32-C3 Super Mini) ----
+// NOTE: GPIO 8 & 9 are strapping/boot pins on the Super Mini
+//       (GPIO 8 = onboard LED, GPIO 9 = BOOT button)
+//       Using GPIO 5/6 for I2C avoids boot conflicts.
+#define I2C_SDA_PIN   5    // I2C SDA (MAX30102 + MPU6500)
+#define I2C_SCL_PIN   6    // I2C SCL (MAX30102 + MPU6500)
+#define DS18B20_PIN   4    // OneWire data pin for DS18B20
+
+// ---- Baseline Values (calibrate for your animal) ----
+#define BASELINE_TEMP   38.5f
+#define BASELINE_HR     62
+
+#endif // CONFIG_H

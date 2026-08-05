@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Map, Home, Bell, MessageSquare, Camera } from "lucide-react";
+import { Map, Home, Bell, MessageSquare, Camera, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -10,7 +10,7 @@ const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/herd", label: "Herd", icon: Map },
   { href: "/alerts", label: "Alerts", icon: Bell, badge: 3 },
-  { href: "/assistant", label: "AI Voice", icon: MessageSquare },
+  { href: "/hardware", label: "HW", icon: Cpu },
   { href: "/scan", label: "Scan", icon: Camera },
 ];
 

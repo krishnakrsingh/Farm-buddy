@@ -2,11 +2,12 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Thermometer, Activity, CloudLightning, ShieldAlert, Check, Stethoscope, AlertTriangle, ShieldCheck, Lock } from "lucide-react";
+import { ArrowLeft, Thermometer, Activity, CloudLightning, ShieldAlert, Check, Stethoscope, AlertTriangle, ShieldCheck, Lock, Zap, Droplets } from "lucide-react";
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
 import { cn } from "@/lib/utils";
 import { useHerdState } from "@/lib/useHerdState";
+import { useLiveSensorData } from "@/lib/useLiveSensorData";
 
 export default function CowDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
@@ -17,6 +18,7 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
     const cow = cows.find((c) => c.id === cowId) || cows[0];
     const isEscalated = cow.status === "escalated";
     const tempDelta = (cow.temp - cow.baseTemp).toFixed(1);
+    const { liveData, isHardwareOnline, hardwareHistory } = useLiveSensorData(cowId);
 
     return (
         <div className="min-h-screen bg-[#DBEDD9] text-[#1B4332] pb-32 relative font-sans overflow-x-hidden selection:bg-[#B7D8C6]">
@@ -49,6 +51,26 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
 
                     <div className="w-10 h-10" />
                 </header>
+
+                {/* Live Hardware Feed Banner */}
+                {cow.isLiveHardware && isHardwareOnline && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-emerald-600 rounded-[22px] p-3 border border-emerald-500 shadow-md flex items-center gap-3"
+                    >
+                        <div className="w-10 h-10 rounded-[14px] bg-emerald-700/60 text-white flex items-center justify-center shrink-0">
+                            <Zap size={22} className="animate-pulse" />
+                        </div>
+                        <div className="text-white">
+                            <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Live Hardware Feed</div>
+                            <div className="text-[14px] font-black leading-tight">ESP32-C3 Streaming Real Sensor Data</div>
+                            <div className="text-[10px] font-medium opacity-80 mt-0.5">
+                                Device: {liveData?.deviceId} • RSSI: {liveData?.rssi}dBm • Packets: {liveData?.sendCount}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Bulk Milk Tank Protection Status Banner (The Stakes!) */}
                 <motion.div
@@ -235,6 +257,33 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
                             </div>
                         </div>
                     </div>
+
+                    {/* SpO2, Activity, Posture — visible when live hardware is active */}
+                    {cow.isLiveHardware && (
+                        <div className="grid grid-cols-3 gap-2 mt-3">
+                            <div className="bg-blue-50 rounded-[16px] p-2.5 border border-blue-100 text-center">
+                                <Droplets size={16} className="text-blue-500 mx-auto mb-1" />
+                                <div className="text-[9px] font-black text-blue-600 uppercase tracking-wider">SpO2</div>
+                                <div className="text-[16px] font-black text-[#113A28] leading-none mt-0.5">
+                                    {cow.spo2?.toFixed(1)}%
+                                </div>
+                            </div>
+                            <div className="bg-purple-50 rounded-[16px] p-2.5 border border-purple-100 text-center">
+                                <Activity size={16} className="text-purple-500 mx-auto mb-1" />
+                                <div className="text-[9px] font-black text-purple-600 uppercase tracking-wider">Activity</div>
+                                <div className="text-[16px] font-black text-[#113A28] leading-none mt-0.5">
+                                    {Math.round((cow.activityLevel || 0) * 100)}%
+                                </div>
+                            </div>
+                            <div className="bg-teal-50 rounded-[16px] p-2.5 border border-teal-100 text-center">
+                                <div className="text-[16px] mb-0.5">{cow.posture === "standing" ? "💪" : cow.posture === "lying" ? "💤" : "🚶"}</div>
+                                <div className="text-[9px] font-black text-teal-600 uppercase tracking-wider">Posture</div>
+                                <div className="text-[13px] font-black text-[#113A28] leading-none mt-0.5 capitalize">
+                                    {cow.posture || "—"}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </motion.div>
             </div>
         </div>

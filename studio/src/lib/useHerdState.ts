@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLiveSensorData } from "./useLiveSensorData";
 
 export type TierStatus = "normal" | "flagged" | "escalated";
 
@@ -13,6 +14,10 @@ export interface CowData {
     baseTemp: number;
     hr: number;
     baseHr: number;
+    spo2: number;
+    activityLevel: number;
+    posture: string;
+    isLiveHardware: boolean;
     reason: string;
     confidence: number;
     category: string;
@@ -35,6 +40,10 @@ const INITIAL_COWS: CowData[] = [
         baseTemp: 38.5,
         hr: 88,
         baseHr: 62,
+        spo2: 96.5,
+        activityLevel: 0.3,
+        posture: "standing",
+        isLiveHardware: false,
         reason: "Sustained temp rise + elevated HR (>4h)",
         confidence: 94,
         category: "Clinical Mastitis / Early Systemic Infection",
@@ -66,6 +75,10 @@ const INITIAL_COWS: CowData[] = [
         baseTemp: 38.4,
         hr: 84,
         baseHr: 60,
+        spo2: 95.8,
+        activityLevel: 0.6,
+        posture: "lying",
+        isLiveHardware: false,
         reason: "Abnormal movement pattern + heat stress delta",
         confidence: 89,
         category: "Severe Heat Stress / Dehydration Anomaly",
@@ -97,6 +110,10 @@ const INITIAL_COWS: CowData[] = [
         baseTemp: 38.6,
         hr: 82,
         baseHr: 64,
+        spo2: 96.2,
+        activityLevel: 0.4,
+        posture: "standing",
+        isLiveHardware: false,
         reason: "Pre-calving fever pattern detected",
         confidence: 87,
         category: "Acute Metritis Suspected",
@@ -128,6 +145,10 @@ const INITIAL_COWS: CowData[] = [
         baseTemp: 38.5,
         hr: 72,
         baseHr: 62,
+        spo2: 97.0,
+        activityLevel: 0.2,
+        posture: "standing",
+        isLiveHardware: false,
         reason: "Edge sensor: minor temp spike (+0.8°C)",
         confidence: 76,
         category: "On-Device Baseline Watchlist",
@@ -158,6 +179,10 @@ const INITIAL_COWS: CowData[] = [
         baseTemp: 38.4,
         hr: 74,
         baseHr: 61,
+        spo2: 97.5,
+        activityLevel: 0.5,
+        posture: "moving",
+        isLiveHardware: false,
         reason: "Edge sensor: Heart rate elevated",
         confidence: 71,
         category: "On-Device Baseline Watchlist",
@@ -188,6 +213,10 @@ const INITIAL_COWS: CowData[] = [
         baseTemp: 38.5,
         hr: 61,
         baseHr: 61,
+        spo2: 98.0,
+        activityLevel: 0.1,
+        posture: "standing",
+        isLiveHardware: false,
         reason: "Normal individual baseline",
         confidence: 99,
         category: "Healthy",
@@ -208,6 +237,10 @@ const INITIAL_COWS: CowData[] = [
         baseTemp: 38.6,
         hr: 63,
         baseHr: 63,
+        spo2: 97.8,
+        activityLevel: 0.15,
+        posture: "lying",
+        isLiveHardware: false,
         reason: "Normal individual baseline",
         confidence: 99,
         category: "Healthy",
@@ -226,6 +259,9 @@ export function useHerdState() {
     const [lastSync, setLastSync] = useState<Date>(new Date());
     const [simTick, setSimTick] = useState(0);
 
+    // Live hardware sensor data for Cow #014
+    const { liveData, isHardwareOnline, lastSeen, hardwareHistory, isFirebaseConnected } = useLiveSensorData("014");
+
     // Live micro-simulation (fluctuates heart rate & temps slightly every 3 seconds)
     useEffect(() => {
         const interval = setInterval(() => {
@@ -233,6 +269,10 @@ export function useHerdState() {
             setSimTick((prev) => prev + 1);
             setCows((prevCows) =>
                 prevCows.map((cow) => {
+                    // Skip simulation for cow 014 when hardware is live
+                    if (cow.id === "014" && isHardwareOnline && liveData) {
+                        return cow;
+                    }
                     const tempJitter = (Math.random() - 0.5) * 0.04;
                     const hrJitter = Math.floor((Math.random() - 0.5) * 2);
                     return {
@@ -244,7 +284,34 @@ export function useHerdState() {
             );
         }, 3000);
         return () => clearInterval(interval);
-    }, []);
+    }, [isHardwareOnline, liveData]);
+
+    // Overlay real hardware data onto cow 014 when available
+    useEffect(() => {
+        if (isHardwareOnline && liveData) {
+            setCows((prevCows) =>
+                prevCows.map((cow) => {
+                    if (cow.id === "014") {
+                        return {
+                            ...cow,
+                            temp: liveData.temp,
+                            hr: liveData.hr,
+                            spo2: liveData.spo2,
+                            activityLevel: liveData.activityLevel,
+                            posture: liveData.posture,
+                            isLiveHardware: true,
+                        };
+                    }
+                    return { ...cow, isLiveHardware: false };
+                })
+            );
+        } else {
+            // Mark all cows as not live hardware when offline
+            setCows((prevCows) =>
+                prevCows.map((cow) => ({ ...cow, isLiveHardware: false }))
+            );
+        }
+    }, [isHardwareOnline, liveData]);
 
     const holdMilk = (cowId: string) => {
         setCows((prev) =>
@@ -265,7 +332,7 @@ export function useHerdState() {
     };
 
     const totalCows = 1240;
-    const onlineTags = 1238;
+    const onlineTags = isHardwareOnline ? 1239 : 1238;
     const escalatedCows = cows.filter((c) => c.status === "escalated");
     const flaggedCows = cows.filter((c) => c.status === "flagged");
     const unhandledEscalated = escalatedCows.filter((c) => !c.heldMilk);
@@ -279,6 +346,10 @@ export function useHerdState() {
         flaggedCows,
         unhandledEscalated,
         isTankContaminatedRisk,
+        isHardwareOnline,
+        hardwareLastSeen: lastSeen,
+        hardwareHistory,
+        isFirebaseConnected,
         lastSync,
         simTick,
         holdMilk,

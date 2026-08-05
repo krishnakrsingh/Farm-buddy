@@ -1,6 +1,6 @@
 "use client";
 
-import { Map, AlertTriangle, ChevronRight, Radio, CheckCircle2, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Map, AlertTriangle, ChevronRight, Radio, CheckCircle2, ShieldAlert, ShieldCheck, Zap } from "lucide-react";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -160,6 +160,11 @@ export default function HerdPage() {
                                                 <h4 className="text-[15px] font-black text-[#113A28] leading-tight flex items-center gap-2">
                                                     Cow #{cow.id}
                                                     <span className="text-[10px] font-black text-[#6C8576] font-mono">{cow.tagId}</span>
+                                                    {cow.isLiveHardware && (
+                                                        <span className="text-[8px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                                                            <Zap size={8} /> LIVE HW
+                                                        </span>
+                                                    )}
                                                 </h4>
                                                 <span className="text-[10px] font-bold text-[#8DA697]">{cow.durationMinutes}m ago</span>
                                             </div>
@@ -178,6 +183,11 @@ export default function HerdPage() {
                                                 <span className="text-[10px] font-extrabold text-[#6C8576]">
                                                     HR: <span className="text-[#113A28]">{cow.hr} bpm</span>
                                                 </span>
+                                                {cow.isLiveHardware && (
+                                                    <span className="text-[10px] font-extrabold text-[#6C8576]">
+                                                        SpO2: <span className="text-blue-600">{cow.spo2?.toFixed(1)}%</span>
+                                                    </span>
+                                                )}
 
                                                 {cow.heldMilk ? (
                                                     <span className="ml-auto text-[9px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">

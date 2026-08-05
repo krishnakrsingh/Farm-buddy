@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, AlertTriangle, ShieldAlert, ChevronRight, Search, Lock, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Bell, AlertTriangle, ShieldAlert, ChevronRight, Search, Lock, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useHerdState } from "@/lib/useHerdState";
@@ -152,6 +152,11 @@ export default function AlertsPage() {
                                                     <h4 className="text-[16px] font-black text-[#113A28] leading-tight flex items-center gap-2">
                                                         Cow #{cow.id}
                                                         <span className="text-[10px] font-mono font-bold text-[#8DA697]">{cow.tagId}</span>
+                                                        {cow.isLiveHardware && (
+                                                            <span className="text-[8px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                                                                <Zap size={8} /> LIVE
+                                                            </span>
+                                                        )}
                                                     </h4>
                                                     <span className="text-[10px] font-bold text-[#8DA697] bg-[#F4F9F4] px-2 py-0.5 rounded-full border border-[#E9F4EC]">
                                                         {cow.durationMinutes}m ago
@@ -166,6 +171,9 @@ export default function AlertsPage() {
                                                 <div className="flex items-center gap-3 text-[11px] font-bold text-[#6C8576]">
                                                     <span>{cow.shed}</span>
                                                     <span>Temp: <strong className={isEscalated ? "text-red-600" : "text-[#9A6E00]"}>{cow.temp}°C (+{tempDelta}°C)</strong></span>
+                                                    {cow.isLiveHardware && (
+                                                        <span>SpO2: <strong className="text-blue-600">{cow.spo2?.toFixed(1)}%</strong></span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
