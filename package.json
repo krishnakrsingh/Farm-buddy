@@ -8,6 +8,9 @@
     "lint": "npm run lint --prefix studio",
     "typecheck": "npm run typecheck --prefix studio"
   },
+  "dependencies": {
+    "next": "15.5.9"
+  },
   "devDependencies": {
     "next": "15.5.9"
   }
