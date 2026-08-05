@@ -12,7 +12,7 @@
  *
  *  Wiring (ESP32-C3 Super Mini):
  *    GPIO 5 (SDA) → MAX30102 SDA + MPU6500 SDA  (shared I2C bus)
- *    GPIO 6 (SCL) → MAX30102 SCL + MPU6500 SCL  (shared I2C bus)
+ *    GPIO 7 (SCL) → MAX30102 SCL + MPU6500 SCL  (shared I2C bus)
  *    GPIO 4       → DS18B20 DATA (4.7kΩ pull-up to 3.3V)
  *    3.3V         → All sensor VCC
  *    GND          → All sensor GND

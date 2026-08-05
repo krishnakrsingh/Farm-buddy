@@ -20,7 +20,7 @@
   MAX30102 SDA ─────┤ GPIO 5 (SDA)        │
   MPU6500  SDA ─────┤                     │
                     │                      │
-  MAX30102 SCL ─────┤ GPIO 6 (SCL)        │
+  MAX30102 SCL ─────┤ GPIO 7 (SCL)        │
   MPU6500  SCL ─────┤                     │
                     │                      │
   DS18B20  DATA ────┤ GPIO 4              │──── 4.7kΩ ──── 3.3V
@@ -30,7 +30,7 @@
                     └──────────────────────┘
 ```
 
-> ⚠️ **Super Mini Note**: We use **GPIO 5/6** for I2C instead of the default 8/9 because:
+> ⚠️ **Super Mini Note**: We use **GPIO 5/7** for I2C instead of the default 8/9 because:
 > - GPIO 8 = onboard blue LED (strapping pin)
 > - GPIO 9 = BOOT button (strapping pin)
 > - Using 8/9 for I2C can cause boot failures if sensors pull the pins
@@ -44,13 +44,13 @@ MAX30102 Module:
   VCC → 3.3V
   GND → GND
   SDA → GPIO 5
-  SCL → GPIO 6
+  SCL → GPIO 7
 
 MPU6500 Module:
   VCC → 3.3V
   GND → GND
   SDA → GPIO 5  (same bus as MAX30102, different I2C address)
-  SCL → GPIO 6  (same bus as MAX30102, different I2C address)
+  SCL → GPIO 7  (same bus as MAX30102, different I2C address)
 
 DS18B20 Probe:
   VCC (red)   → 3.3V

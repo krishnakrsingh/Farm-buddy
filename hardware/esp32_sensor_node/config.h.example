@@ -34,7 +34,7 @@
 //       (GPIO 8 = onboard LED, GPIO 9 = BOOT button)
 //       Using GPIO 5/6 for I2C avoids boot conflicts.
 #define I2C_SDA_PIN   5    // I2C SDA (MAX30102 + MPU6500)
-#define I2C_SCL_PIN   6    // I2C SCL (MAX30102 + MPU6500)
+#define I2C_SCL_PIN   7    // I2C SCL (MAX30102 + MPU6500)
 #define DS18B20_PIN   4    // OneWire data pin for DS18B20
 
 // ---- Baseline Values (calibrate for your animal) ----
