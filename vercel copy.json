@@ -1,5 +1,4 @@
 {
-  "installCommand": "npm install --prefix studio",
   "buildCommand": "npm run build --prefix studio",
   "outputDirectory": "studio/.next"
 }
