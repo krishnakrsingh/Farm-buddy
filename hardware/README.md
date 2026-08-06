@@ -1,135 +1,43 @@
-# 🔧 Farm-Buddy Hardware Setup Guide
+# 🔌 Farm-Buddy Hardware Integration (Direct USB UART Architecture)
 
-## ESP32-C3 Super Mini Sensor Node — Wiring & Setup
+Zero Cloud • Zero Wi-Fi • 100% Direct Local Laptop Telemetry (&lt;10ms Latency)
 
-### Components
+---
 
-| Component | Purpose | Interface |
-|-----------|---------|-----------|
-| ESP32-C3 Super Mini | WiFi gateway + processing | — |
-| MAX30102 | Heart Rate + SpO2 | I2C (0x57) |
-| DS18B20 | Body Temperature | OneWire |
-| MPU6500 | Motion / Activity / Posture | I2C (0x68) |
+## 🛠️ Hardware Specification
 
-### Wiring Diagram
+- **MCU**: ESP32-C3 Super Mini Development Board (USB CDC enabled)
+- **Port**: `COM3` (USB-C connected directly to laptop)
+- **Sensors**:
+  - **MAX30102**: Optical Heart Rate & Pulse Oximeter (I2C: `0x57`)
+  - **DS18B20**: Waterproof Temperature Probe (OneWire: `GPIO 4`)
+  - **MPU6500**: 6-Axis Accelerometer & Gyroscope (I2C: `0x68`)
 
-```
-                    ┌──────────────────────┐
-                    │  ESP32-C3 Super Mini │
-                    │                      │
-  MAX30102 SDA ─────┤ GPIO 5 (SDA)        │
-  MPU6500  SDA ─────┤                     │
-                    │                      │
-  MAX30102 SCL ─────┤ GPIO 7 (SCL)        │
-  MPU6500  SCL ─────┤                     │
-                    │                      │
-  DS18B20  DATA ────┤ GPIO 4              │──── 4.7kΩ ──── 3.3V
-                    │                      │
-  All VCC ──────────┤ 3.3V                │
-  All GND ──────────┤ GND                 │
-                    └──────────────────────┘
-```
+---
 
-> ⚠️ **Super Mini Note**: We use **GPIO 5/7** for I2C instead of the default 8/9 because:
-> - GPIO 8 = onboard blue LED (strapping pin)
-> - GPIO 9 = BOOT button (strapping pin)
-> - Using 8/9 for I2C can cause boot failures if sensors pull the pins
+## 📌 Wiring Diagram (ESP32-C3 Super Mini)
 
-> **Important**: The DS18B20 DATA line requires a **4.7kΩ pull-up resistor** to 3.3V!
+| Sensor Pin | ESP32-C3 Pin | Notes |
+| :--- | :--- | :--- |
+| **MAX30102 SDA** | `GPIO 5` | Shared I2C Bus (400kHz) |
+| **MAX30102 SCL** | `GPIO 7` | Shared I2C Bus (GPIO 6 broken, moved to 7) |
+| **MPU6500 SDA** | `GPIO 5` | Shared I2C Bus |
+| **MPU6500 SCL** | `GPIO 7` | Shared I2C Bus |
+| **DS18B20 DATA** | `GPIO 4` | OneWire Bus + 4.7kΩ pull-up resistor to 3.3V |
+| **All VCC** | `3.3V` | Continuous 3.3V power |
+| **All GND** | `GND` | Common Ground |
 
-### Physical Connections Summary
+---
 
-```
-MAX30102 Module:
-  VCC → 3.3V
-  GND → GND
-  SDA → GPIO 5
-  SCL → GPIO 7
+## 🚀 Laptop Demo Setup Guide
 
-MPU6500 Module:
-  VCC → 3.3V
-  GND → GND
-  SDA → GPIO 5  (same bus as MAX30102, different I2C address)
-  SCL → GPIO 7  (same bus as MAX30102, different I2C address)
-
-DS18B20 Probe:
-  VCC (red)   → 3.3V
-  GND (black) → GND
-  DATA (yellow) → GPIO 4  +  4.7kΩ resistor between DATA and 3.3V
-```
-
-### Arduino IDE Setup
-
-1. **Install ESP32 Board Support**:
-   - File → Preferences → Additional Board URLs:
-     ```
-     https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-     ```
-   - Tools → Board Manager → Search "esp32" → Install **esp32 by Espressif Systems**
-
-2. **Select Board**: Tools → Board → **ESP32C3 Dev Module**
-   - USB CDC On Boot: **Enabled**
-   - Flash Size: 4MB
-   - Upload Speed: 921600
-
-3. **Install Libraries** (Sketch → Include Library → Manage Libraries):
-   - `SparkFun MAX3010x Pulse and Proximity Sensor Library`
-   - `DallasTemperature` (this auto-installs OneWire)
-   - `ArduinoJson` (by Benoit Blanchon)
-
-4. **Configure**:
-   - Copy `config.h.example` to `config.h`
-   - Set your WiFi SSID and password
-   - Firebase URL is already pre-filled (`vitalink-57fe2`)
-
-5. **Upload**: 
-   - Connect Super Mini via USB-C
-   - Select correct COM port
-   - Hold BOOT button → Press RESET → Release BOOT (if upload fails)
-   - Upload!
-
-### Firebase (Already Done!)
-
-Your Firebase Realtime Database is already configured:
-- **Project**: `vitalink-57fe2`
-- **DB URL**: `https://vitalink-57fe2-default-rtdb.firebaseio.com`
-
-> Make sure your Realtime Database rules are set to test mode for the demo:
-> ```json
-> {
->   "rules": {
->     ".read": true,
->     ".write": true
->   }
-> }
-> ```
-
-### Verifying It Works
-
-1. Open Arduino Serial Monitor (115200 baud)
-2. You should see:
+1. **Plug ESP32 into Laptop USB-C Port** (`COM3`).
+2. **Flash Firmware (if modifying code)**:
+   ```powershell
+   C:\Users\krish\bin\arduino-cli.exe compile --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc --upload --port COM3 hardware\esp32_sensor_node
    ```
-   ╔══════════════════════════════════════════╗
-   ║  Farm-Buddy ESP32-C3 Sensor Node v1.0   ║
-   ╚══════════════════════════════════════════╝
-   
-   [MAX30102] Initializing... OK!
-   [DS18B20]  Initializing... OK! Found 1 sensor(s)
-   [MPU6500]  Initializing... OK! (ID: 0x70)
-   [WiFi] Connected! IP: 192.168.1.x  RSSI: -45 dBm
-   
-   [Firebase] ✓ PUT OK | Temp: 38.5°C  HR: 62 bpm  SpO2: 97.2%
-   ```
-3. Check Firebase Console → Realtime Database → `/sensors/014` node updating in real-time
-4. Open the Farm-Buddy dashboard → `/hardware` page shows live data!
-
-### Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| Upload fails | Hold BOOT button while pressing RESET, then upload |
-| `[MAX30102] NOT FOUND` | Check SDA/SCL wiring to GPIO 5/6 |
-| `[DS18B20] NOT FOUND` | Check GPIO 4 wiring + 4.7kΩ pull-up resistor |
-| `[MPU6500] NOT FOUND` | Check SDA/SCL + ensure AD0 pin is connected to GND (address 0x68) |
-| `[Firebase] PUT FAILED` | Check WiFi connection + Firebase RTDB rules (must be test mode) |
-| No serial output | Enable "USB CDC On Boot" in Arduino IDE board settings |
+3. **Open Web App Dashboard**:
+   - Open `http://localhost:3000/hardware` in Google Chrome, Edge, or Brave.
+4. **Click "Connect USB COM Port"**:
+   - Select `COM3` / `USB JTAG/serial debug unit` in the browser popup.
+   - Live sensor metrics (HR, SpO2, Temp, Motion, Posture) will immediately stream at **10 Hz (&lt;10ms latency)** across all pages!

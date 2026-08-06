@@ -162,7 +162,7 @@ export default function HerdPage() {
                                                     <span className="text-[10px] font-black text-[#6C8576] font-mono">{cow.tagId}</span>
                                                     {cow.isLiveHardware && (
                                                         <span className="text-[8px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
-                                                            <Zap size={8} /> LIVE HW
+                                                            <Zap size={8} /> USB UART LIVE
                                                         </span>
                                                     )}
                                                 </h4>

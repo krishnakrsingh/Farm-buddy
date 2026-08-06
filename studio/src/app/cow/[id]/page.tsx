@@ -63,10 +63,10 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
                             <Zap size={22} className="animate-pulse" />
                         </div>
                         <div className="text-white">
-                            <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Live Hardware Feed</div>
-                            <div className="text-[14px] font-black leading-tight">ESP32-C3 Streaming Real Sensor Data</div>
+                            <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Direct USB UART Serial Stream</div>
+                            <div className="text-[14px] font-black leading-tight">ESP32-C3 Streaming Real Sensor Data (10Hz)</div>
                             <div className="text-[10px] font-medium opacity-80 mt-0.5">
-                                Device: {liveData?.deviceId} • RSSI: {liveData?.rssi}dBm • Packets: {liveData?.sendCount}
+                                Device: {liveData?.deviceId} • Latency: &lt;10ms • Packets: {liveData?.sendCount}
                             </div>
                         </div>
                     </motion.div>

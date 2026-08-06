@@ -259,17 +259,25 @@ export function useHerdState() {
     const [lastSync, setLastSync] = useState<Date>(new Date());
     const [simTick, setSimTick] = useState(0);
 
-    // Live hardware sensor data for Cow #014
-    const { liveData, isHardwareOnline, lastSeen, hardwareHistory, isFirebaseConnected } = useLiveSensorData("014");
+    // Live UART hardware sensor data for Cow #014
+    const {
+        liveData,
+        isHardwareOnline,
+        lastSeen,
+        hardwareHistory,
+        isConnectedViaUSB,
+        isWebSerialSupported,
+        connectUSBSerial,
+        disconnectUSBSerial,
+    } = useLiveSensorData("014");
 
-    // Live micro-simulation (fluctuates heart rate & temps slightly every 3 seconds)
+    // Live micro-simulation
     useEffect(() => {
         const interval = setInterval(() => {
             setLastSync(new Date());
             setSimTick((prev) => prev + 1);
             setCows((prevCows) =>
                 prevCows.map((cow) => {
-                    // Skip simulation for cow 014 when hardware is live
                     if (cow.id === "014" && isHardwareOnline && liveData) {
                         return cow;
                     }
@@ -286,7 +294,7 @@ export function useHerdState() {
         return () => clearInterval(interval);
     }, [isHardwareOnline, liveData]);
 
-    // Overlay real hardware data onto cow 014 when available
+    // Overlay real UART hardware data onto cow 014 when available
     useEffect(() => {
         if (isHardwareOnline && liveData) {
             setCows((prevCows) =>
@@ -306,7 +314,6 @@ export function useHerdState() {
                 })
             );
         } else {
-            // Mark all cows as not live hardware when offline
             setCows((prevCows) =>
                 prevCows.map((cow) => ({ ...cow, isLiveHardware: false }))
             );
@@ -349,7 +356,10 @@ export function useHerdState() {
         isHardwareOnline,
         hardwareLastSeen: lastSeen,
         hardwareHistory,
-        isFirebaseConnected,
+        isConnectedViaUSB,
+        isWebSerialSupported,
+        connectUSBSerial,
+        disconnectUSBSerial,
         lastSync,
         simTick,
         holdMilk,
