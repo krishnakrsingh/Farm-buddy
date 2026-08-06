@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Edge-to-Cloud Sick Cow Detection Pipeline</title>
+    <style>
+        :root {
+            --sensor: #6b7a72;
+            --sensor-bg: #eef1ef;
+            --edge: #2f8f7d;
+            --edge-bg: #e6f3f0;
+            --decision: #c9891f;
+            --decision-bg: #faf1e0;
+            --cloud: #d9603a;
+            --cloud-bg: #fbeae4;
+            --terminal: #1f4b34;
+            --terminal-bg: #e3ede7;
+            --ink: #1a2e22;
+            --muted: #6b756f;
+            --bg: #f4f7f2;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--ink)
+        }
+
+        header {
+            padding: 22px 28px 10px
+        }
+
+        header h1 {
+            margin: 0 0 4px;
+            font-size: 22px
+        }
+
+        header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px
+        }
+
+        .legend {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            padding: 0 28px 16px;
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block
+        }
+
+        .wrap {
+            display: flex;
+            gap: 18px;
+            padding: 0 28px 28px;
+            align-items: flex-start;
+            flex-wrap: nowrap
+        }
+
+        .canvas-scroll {
+            overflow-x: auto;
+            border: 1px solid #dfe6e0;
+            border-radius: 16px;
+            background: #fff;
+            flex: 1;
+            min-width: 0;
+        }
+
+        svg {
+            display: block
+        }
+
+        .node {
+            position: absolute;
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+            transition: transform .12s ease, box-shadow .12s ease;
+        }
+
+        .node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, .12)
+        }
+
+        .node.selected {
+            border-color: var(--ink);
+            box-shadow: 0 0 0 3px rgba(31, 46, 34, .12)
+        }
+
+        .node .t {
+            font-weight: 700;
+            font-size: 13px;
+            line-height: 1.25
+        }
+
+        .node .s {
+            font-size: 11.5px;
+            color: var(--muted);
+            margin-top: 3px;
+            line-height: 1.3
+        }
+
+        .node .desc {
+            font-size: 11px;
+            color: #4a5c50;
+            margin-top: 8px;
+            line-height: 1.35;
+            font-weight: 400;
+        }
+
+        .tier-sensor {
+            background: var(--sensor-bg)
+        }
+
+        .tier-sensor .t {
+            color: var(--sensor)
+        }
+
+        .tier-edge {
+            background: var(--edge-bg)
+        }
+
+        .tier-edge .t {
+            color: var(--edge)
+        }
+
+        .tier-decision {
+            background: var(--decision-bg)
+        }
+
+        .tier-decision .t {
+            color: var(--decision)
+        }
+
+        .tier-cloud {
+            background: var(--cloud-bg)
+        }
+
+        .tier-cloud .t {
+            color: var(--cloud)
+        }
+
+        .tier-terminal {
+            background: var(--terminal-bg)
+        }
+
+        .tier-terminal .t {
+            color: var(--terminal);
+            font-size: 14px
+        }
+
+        path.edge {
+            fill: none;
+            stroke: #b7c2ba;
+            stroke-width: 1.6
+        }
+
+        path.edge.dashed {
+            stroke-dasharray: 4 4;
+            stroke: #9aa79f
+        }
+
+        .edge-label {
+            font-size: 10.5px;
+            fill: #6b756f
+        }
+
+        .panel {
+            flex: 1;
+            min-width: 320px;
+            max-width: 400px;
+            background: #fff;
+            border: 1px solid #dfe6e0;
+            border-radius: 16px;
+            padding: 20px 22px;
+            position: sticky;
+            top: 20px;
+            min-height: 420px
+        }
+
+        .panel h2 {
+            margin: 0 0 10px;
+            font-size: 17px
+        }
+
+        .panel p {
+            font-size: 13.5px;
+            line-height: 1.55;
+            color: #334138;
+            margin: 0 0 12px
+        }
+
+        .spec-list {
+            list-style: none;
+            margin: 0 0 14px;
+            padding: 0;
+            font-size: 12.5px;
+            color: var(--muted)
+        }
+
+        .spec-list li {
+            padding: 4px 0;
+            border-bottom: 1px dashed #e7ece8
+        }
+
+        .spec-list b {
+            color: var(--ink)
+        }
+
+        .formula {
+            background: #f4f7f2;
+            border: 1px solid #e2e9e4;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            font-size: 12.5px;
+            white-space: pre-wrap;
+            margin: 0 0 12px
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .02em;
+            padding: 3px 9px;
+            border-radius: 20px;
+            margin-bottom: 10px
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Edge-to-Cloud Sick Cow Detection Pipeline</h1>
+        <p>3 sensors per cow &rarr; 6 on-device algorithms &rarr; escalation to 1 cloud model, only for flagged cows.
+            Goal: identify sick cows early — nothing downstream is enforced by this system.</p>
+    </header>
+
+    <div class="legend">
+        <span><span class="dot" style="background:var(--sensor)"></span>Sensor</span>
+        <span><span class="dot" style="background:var(--edge)"></span>Edge algorithm</span>
+        <span><span class="dot" style="background:var(--decision)"></span>Decision layer</span>
+        <span><span class="dot" style="background:var(--cloud)"></span>Cloud model</span>
+        <span><span class="dot" style="background:var(--terminal)"></span>Outcome</span>
+    </div>
+
+    <div class="wrap">
+        <div class="canvas-scroll">
+            <div id="diagram" style="position:relative;width:1950px;height:560px;"></div>
+        </div>
+        <div class="panel" id="panel"></div>
+    </div>
+
+    <script>
+        const nodes = {
+            ds18b20: {
+                x: 30, y: 25, w: 210, h: 110, tier: 'sensor', title: 'DS18B20', sub: 'Core temperature',
+                desc: 'Captures stable baseline temp. Primary indicator for infection/fever.',
+                detail: {
+                    title: 'DS18B20 — Core Temperature',
+                    specs: ['Interface: 1-Wire digital', 'Resolution: 9–12 bit, ±0.5°C accuracy', 'Read cycle: ~750ms per conversion', 'Placement: subcutaneous ear-base patch'],
+                    body: 'Provides the core temperature channel. It is the slowest-changing but most specific signal in the whole pipeline — fever is what the CUSUM detector and the cloud model weight most heavily for infection-driven illness.'
+                }
+            },
+            max30102: {
+                x: 30, y: 170, w: 210, h: 110, tier: 'sensor', title: 'MAX30102', sub: 'Heart rate (PPG)',
+                desc: 'Monitors pulse from inner ear. Prone to motion noise.',
+                detail: {
+                    title: 'MAX30102 — Heart Rate (PPG)',
+                    specs: ['Interface: I2C', 'Red + IR reflectance LEDs', 'Raw sample rate: up to 100Hz', 'Placement: inner ear pinna (thin skin, low hair)'],
+                    body: 'Reflectance PPG was designed for human fingertip skin, not bovine hide — thick skin and a hair coat kill the signal almost everywhere except thin-skin sites like the inner ear. This is exactly why it can never be trusted without the motion-referenced gate right after it.'
+                }
+            },
+            mpu6050: {
+                x: 30, y: 315, w: 210, h: 110, tier: 'sensor', title: 'MPU6050', sub: '6-axis IMU',
+                desc: 'Tracks cow movement, resting behavior, and filters PPG noise.',
+                detail: {
+                    title: 'MPU6050 — 6-Axis IMU',
+                    specs: ['3-axis accelerometer + 3-axis gyroscope', 'Interface: I2C', 'Sample rate: ~50–100Hz'],
+                    body: 'Does three separate jobs in this pipeline: (1) motion reference to clean up the PPG signal, (2) behavior classification — lying / standing / walking / ruminating, and (3) raw stride data feeding the gait detector. This is the sensor that turns a 2-channel vitals system into an actual behavioral monitoring system.'
+                }
+            },
+
+            gate: {
+                x: 290, y: 165, w: 230, h: 120, tier: 'edge', title: 'Algo 1 — Signal Quality Gate', sub: 'Motion-referenced PPG validation',
+                desc: 'Uses IMU data to drop heart rate readings taken while moving.',
+                detail: {
+                    title: 'Algo 1 — Motion-Referenced Signal Quality Gate',
+                    specs: [],
+                    formula: 'accel_var = variance(accel_magnitude, window)\nif accel_var > MOTION_THRESHOLD:\n    reject PPG window\nelse:\n    pass to baseline engine',
+                    body: 'Uses accelerometer magnitude as a noise reference to reject PPG windows corrupted by movement — the same principle Fitbit/Apple Watch-style devices use for motion artifact rejection. Also flags DS18B20 reads taken during high-motion windows, since poor skin contact during movement distorts the temperature reading too. Output: a valid/invalid flag plus a motion-level scalar used downstream.'
+                }
+            },
+
+            baseline: {
+                x: 570, y: 165, w: 220, h: 120, tier: 'edge', title: 'Algo 2 — Adaptive Baseline', sub: 'Per-cow EWMA, 3 channels',
+                desc: 'Learns what is "normal" for each cow, avoiding generic limits.',
+                detail: {
+                    title: 'Algo 2 — Adaptive Per-Cow Baseline',
+                    specs: ['Channels: temperature, heart rate (valid windows only), activity index', 'α tuned slow: 0.02–0.05'],
+                    formula: 'μ_t = α·x_t + (1-α)·μ_(t-1)\n(same form for rolling variance σ²)',
+                    body: "Tracks three channels independently per cow, not per breed or per herd. α is kept slow so the baseline drifts with real physiological change — lactation stage, season — without getting fooled by a fast-onset fever. Every comparison downstream is against this specific cow's own history, never a population threshold."
+                }
+            },
+
+            zscore: {
+                x: 840, y: 15, w: 240, h: 110, tier: 'edge', title: 'Algo 3 — Z-Score Detector', sub: 'Instantaneous deviation',
+                desc: 'Catches sudden, extreme spikes in temperature or heart rate.',
+                detail: {
+                    title: 'Algo 3 — Z-Score Instantaneous Detector',
+                    specs: ['Fires when |z| exceeds ~2.5–3'],
+                    formula: 'z = (x − μ) / σ',
+                    body: 'Fast and cheap, but noisy alone — a single high reading can be sun on the hide or post-exertion, not disease. This is a first-pass filter only, never the sole basis for escalation on its own.'
+                }
+            },
+            cusum: {
+                x: 840, y: 145, w: 240, h: 110, tier: 'edge', title: 'Algo 4 — CUSUM Detector', sub: 'Sustained drift',
+                desc: 'Identifies slow-onset fevers by tracking minor cumulative changes.',
+                detail: {
+                    title: 'Algo 4 — CUSUM Sustained Drift Detector',
+                    specs: ['Flags a real trend, not a single spike'],
+                    formula: 'S_t = max(0, S_(t-1) + (x_t − μ) − k)\nflag when S_t > h',
+                    body: 'Catches slow-onset trends the z-score misses entirely — a fever ramping over 6–8 hours might never cross a hard threshold on any single reading, but the cumulative drift is unmistakable. This is the primary detector on the temperature and heart rate channels.'
+                }
+            },
+            circadian: {
+                x: 840, y: 275, w: 240, h: 110, tier: 'edge', title: 'Algo 5 — Circadian Detector', sub: 'Time-of-day deviation',
+                desc: 'Finds anomalies against daily rhythms (e.g., active at night).',
+                detail: {
+                    title: 'Algo 5 — Circadian Deviation Detector',
+                    specs: ['24 hour-of-day buckets, rolling average per bucket'],
+                    body: "Compares each reading against what's normal for that cow at that specific hour, not the flat 24h average. Rumination, feeding, and rest all follow a real daily rhythm — this catches shifts a flat baseline misses entirely, like abnormal restlessness at a normally-quiet hour."
+                }
+            },
+            gait: {
+                x: 840, y: 405, w: 240, h: 110, tier: 'edge', title: 'Algo 6 — Gait & Rumination', sub: 'IMU pattern analysis',
+                desc: 'Detects lameness from strides and sickness from reduced chewing.',
+                detail: {
+                    title: 'Algo 6 — Gait & Rumination Pattern Detector',
+                    specs: ['Runs on raw IMU stride + head-motion data', 'Bypasses the baseline engine — pattern, not scalar deviation'],
+                    body: 'Stride interval variance during walking bouts flags gait asymmetry — a lameness signature. A drop in rumination time (head-down chewing rhythm) versus baseline is one of the earliest, most reliable sickness indicators across almost every cattle disease, often visible before any fever develops. This channel is frequently the one that catches something first.'
+                }
+            },
+
+            escalation: {
+                x: 1130, y: 200, w: 230, h: 120, tier: 'decision', title: 'Escalation Policy', sub: 'Weighted fusion of algos 3–6',
+                desc: 'Scores combined flags to decide if cloud AI is necessary.',
+                detail: {
+                    title: 'Escalation Policy — the decision layer, not a 7th algorithm',
+                    specs: ['Escalates roughly 1–5% of cows per day'],
+                    body: 'A weighted combination of the four detector outputs — deliberately not framed as a detection algorithm itself. Co-occurring anomalies across independent channels (say, a CUSUM temperature flag and a rumination drop on the same day) weight far higher than any single channel firing alone, because that cross-channel correlation is the strongest signal in the whole system.'
+                }
+            },
+            stayslocal: {
+                x: 1130, y: 45, w: 230, h: 100, tier: 'decision', title: 'Stays Local', sub: '~95–99% of cows, daily',
+                desc: 'Healthy cows are monitored entirely on-device to save power.',
+                detail: {
+                    title: 'Stays Local — the common case',
+                    specs: [],
+                    body: 'No anomaly, or an anomaly not confident enough to escalate. The cow keeps being monitored at full resolution on-device — nothing is dropped, it just never leaves the tag, and costs zero cloud calls.'
+                }
+            },
+
+            cloud: {
+                x: 1410, y: 200, w: 220, h: 120, tier: 'cloud', title: 'Cloud Super Model', sub: 'XGBoost / LightGBM',
+                desc: 'Uses complex models and herd context to analyze only flagged cows.',
+                detail: {
+                    title: 'Cloud Super Model',
+                    specs: ['Gradient-boosted trees, not a neural net', 'Input: 48–72h window, shed context, flag history', 'Output: probability + likely category, not a diagnosis'],
+                    body: 'Only ever runs on the flagged 1–5%. It weighs that cow\u2019s recent multi-channel window against shed/herd context — is this an isolated case or a cluster event like a heat wave — and her own flag history, then returns a triage priority for the farmer to act on.'
+                }
+            },
+
+            terminal: {
+                x: 1680, y: 190, w: 200, h: 140, tier: 'terminal', title: 'Sick Cow Identified', sub: 'Surfaced to farmer, with reasoning',
+                desc: 'Alerts farmer with specific cow ID and likely issues to act upon.',
+                detail: {
+                    title: 'Sick Cow Identified',
+                    specs: [],
+                    body: 'This is the actual output of the system — a specific cow, flagged with a reason a farmer can act on, caught early enough to matter. What happens after identification — vet visit, isolation, milk handling — is a farm-operational decision outside this system\u2019s scope. The project\u2019s job stops at reliable, per-cow identification at a scale no farmer could do by watching 1,000 animals directly.'
+                }
+            }
+        };
+
+        const edges = [
+            ['ds18b20', 'gate'], ['max30102', 'gate'], ['mpu6050', 'gate'],
+            ['gate', 'baseline'],
+            ['baseline', 'zscore'], ['baseline', 'cusum'], ['baseline', 'circadian'], ['baseline', 'gait'],
+            ['zscore', 'escalation'], ['cusum', 'escalation'], ['circadian', 'escalation'], ['gait', 'escalation'],
+            ['escalation', 'stayslocal', { label: '~95–99%/day' }],
+            ['escalation', 'cloud', { label: 'flagged ~1–5%/day' }],
+            ['cloud', 'terminal']
+        ];
+        const extraEdges = [
+            ['mpu6050', 'gait', { dashed: true, label: 'raw IMU stream' }]
+        ];
+
+        const diagram = document.getElementById('diagram');
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('width', '1950'); svg.setAttribute('height', '560');
+        svg.style.position = 'absolute'; svg.style.left = '0'; svg.style.top = '0';
+        diagram.appendChild(svg);
+
+        function elbow(a, b) {
+            const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+            const x2 = b.x, y2 = b.y + b.h / 2;
+            const midX = (x1 + x2) / 2;
+            return { d: `M${x1},${y1} H${midX} V${y2} H${x2}`, lx: midX, ly: (y1 + y2) / 2 - 6 };
+        }
+
+        function drawEdge(fromId, toId, opts) {
+            const a = nodes[fromId], b = nodes[toId];
+            const p = elbow(a, b);
+            const path = document.createElementNS(svgNS, 'path');
+            path.setAttribute('d', p.d);
+            path.setAttribute('class', 'edge' + ((opts && opts.dashed) ? ' dashed' : ''));
+            svg.appendChild(path);
+            if (opts && opts.label) {
+                const t = document.createElementNS(svgNS, 'text');
+                t.setAttribute('x', p.lx); t.setAttribute('y', p.ly);
+                t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'edge-label');
+                t.textContent = opts.label;
+                svg.appendChild(t);
+            }
+        }
+        edges.forEach(e => drawEdge(e[0], e[1], e[2]));
+        extraEdges.forEach(e => drawEdge(e[0], e[1], e[2]));
+
+        Object.keys(nodes).forEach(id => {
+            const n = nodes[id];
+            const div = document.createElement('div');
+            div.className = 'node tier-' + n.tier;
+            div.style.left = n.x + 'px'; div.style.top = n.y + 'px';
+            div.style.width = n.w + 'px'; div.style.height = n.h + 'px';
+            div.innerHTML = `<div class="t">${n.title}</div><div class="s">${n.sub}</div>` + (n.desc ? `<div class="desc">${n.desc}</div>` : '');
+            div.onclick = () => select(id);
+            div.id = 'node-' + id;
+            diagram.appendChild(div);
+        });
+
+        function select(id) {
+            document.querySelectorAll('.node').forEach(el => el.classList.remove('selected'));
+            document.getElementById('node-' + id).classList.add('selected');
+            const d = nodes[id].detail;
+            const tier = nodes[id].tier;
+            let html = `<span class="badge" style="background:var(--${tier}-bg);color:var(--${tier})">${tier.toUpperCase()}</span>`;
+            html += `<h2>${d.title}</h2>`;
+            if (d.formula) html += `<pre class="formula">${d.formula}</pre>`;
+            if (d.specs && d.specs.length) html += `<ul class="spec-list">${d.specs.map(s => '<li>' + s + '</li>').join('')}</ul>`;
+            html += `<p>${d.body}</p>`;
+            document.getElementById('panel').innerHTML = html;
+        }
+
+        document.getElementById('panel').innerHTML =
+            '<p class="hint">Click any block in the diagram to see its full technical detail — formulas, sensor specs, and the reasoning behind each stage.</p>';
+    </script>
+
+</body>
+
+</html>

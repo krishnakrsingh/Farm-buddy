@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Farm-Buddy: The Paradigm Shift</title>
+    <style>
+        :root {
+            --sensor: #6b7a72;
+            --sensor-bg: #eef1ef;
+            --edge: #2f8f7d;
+            --edge-bg: #e6f3f0;
+            --decision: #c9891f;
+            --decision-bg: #faf1e0;
+            --cloud: #d9603a;
+            --cloud-bg: #fbeae4;
+            --terminal: #1f4b34;
+            --terminal-bg: #e3ede7;
+            --ink: #1a2e22;
+            --muted: #6b756f;
+            --bg: #f4f7f2;
+            --white: #ffffff;
+            --border: #dfe6e0;
+            
+            --bad-bg: #fdf5f5;
+            --bad-border: #f8dbdb;
+            --bad-text: #b33939;
+            
+            --good-bg: #f0f7f4;
+            --good-border: #d4e8dd;
+            --good-text: #216e4e;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            max-width: 800px;
+            margin-bottom: 50px;
+        }
+
+        header h1 {
+            margin: 0 0 12px;
+            font-size: 32px;
+            color: var(--terminal);
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        .column-title {
+            text-align: center;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--muted);
+        }
+
+        .vs-divider {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-weight: 700;
+            color: var(--muted);
+            font-size: 14px;
+            padding: 10px 0;
+            position: relative;
+        }
+        
+        .vs-divider::before, .vs-divider::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: var(--border);
+        }
+        .vs-divider::before { left: 0; }
+        .vs-divider::after { right: 0; }
+
+        .card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border: 1px solid var(--border);
+            height: 100%;
+        }
+
+        .card.traditional {
+            background: var(--bad-bg);
+            border-color: var(--bad-border);
+        }
+        
+        .card.traditional h3 { color: var(--bad-text); }
+
+        .card.modern {
+            background: var(--good-bg);
+            border-color: var(--good-border);
+            position: relative;
+        }
+        
+        .card.modern h3 { color: var(--good-text); }
+        .card.modern::before {
+            content: "✓";
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            color: var(--good-text);
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .card p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #4a5c50;
+        }
+
+        .card.traditional p { color: #7a4b4b; }
+
+        .feature-block {
+            display: contents;
+        }
+
+        .bottom-summary {
+            max-width: 1100px;
+            width: 100%;
+            margin-top: 50px;
+            background: var(--terminal);
+            color: var(--white);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(31, 75, 52, 0.2);
+        }
+
+        .bottom-summary h2 {
+            margin: 0 0 16px;
+            font-size: 24px;
+        }
+
+        .bottom-summary p {
+            margin: 0 auto;
+            max-width: 800px;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #d1e0d8;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .vs-divider { display: none; }
+            .feature-block { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
+            .column-title { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Why Farm-Buddy Outperforms Traditional Monitoring</h1>
+        <p>A fundamental shift from reactive observation and generic thresholds to proactive, hyper-personalized, edge-computed animal health tracking.</p>
+    </header>
+
+    <div class="comparison-grid">
+        <div class="column-title">Traditional Methods</div>
+        <div class="column-title">The Farm-Buddy Edge Pipeline</div>
+
+        <!-- Point 1 -->
+        <div class="feature-block">
+            <div class="card traditional">
+                <h3>Visual Observation & Late Detection</h3>
+                <p>Farmers rely on visual cues (lethargy, isolated behavior, dropped milk yield). By the time a human spots these symptoms, the disease is advanced, recovery takes longer, and intervention is costly.</p>
+            </div>
+            <div class="card modern">
+                <h3>Pre-Clinical Digital Detection</h3>
+                <p>Farm-Buddy tracks core temperature (DS18B20), heart rate (MAX30102), and subtle rumination drops (IMU). CUSUM drift algorithms detect slow-onset fevers 24–48 hours before any clinical signs become visible to the human eye.</p>
+            </div>
+        </div>
+
+        <div class="vs-divider">INTELLIGENCE LOCATION</div>
+
+        <!-- Point 2 -->
+        <div class="feature-block">
+            <div class="card traditional">
+                <h3>Cloud-Heavy "Dumb" Sensors</h3>
+                <p>Legacy tags broadcast raw data constantly via Wi-Fi or LoRa to a central server. This massive data stream drains the battery rapidly and requires strong, continuous farm-wide internet coverage.</p>
+            </div>
+            <div class="card modern">
+                <h3>Edge AI & Zero-Cost Escalation</h3>
+                <p>95-99% of cows process data entirely on-collar. The ESP32-C3 runs 6 independent algorithms locally. Wi-Fi and Cloud AI are only triggered for the 1-5% of flagged cows, preserving battery life for months.</p>
+            </div>
+        </div>
+
+        <div class="vs-divider">BASELINE METRICS</div>
+
+        <!-- Point 3 -->
+        <div class="feature-block">
+            <div class="card traditional">
+                <h3>Generic Herd Thresholds</h3>
+                <p>Traditional systems flag a cow if her temperature crosses a hard number (e.g., 39.5°C). This ignores individual physiology, stage of lactation, and time of day, leading to frustrating false alarms.</p>
+            </div>
+            <div class="card modern">
+                <h3>Adaptive Per-Cow Baselines</h3>
+                <p>Uses an EWMA (Exponentially Weighted Moving Average) and Circadian tracking. The system learns what is "normal" for Cow #014 at 2:00 PM in July. Anomalies are scored against her own history, not the herd's.</p>
+            </div>
+        </div>
+
+        <div class="vs-divider">DATA RELIABILITY</div>
+
+        <!-- Point 4 -->
+        <div class="feature-block">
+            <div class="card traditional">
+                <h3>Single-Channel & Noisy Data</h3>
+                <p>Basic pedometers only track steps. Simple PPG tags suffer from massive motion artifacts, causing messy heart rate data when the cow is chewing, walking, or scratching.</p>
+            </div>
+            <div class="card modern">
+                <h3>Motion-Referenced Sensor Fusion</h3>
+                <p>The MPU6500 IMU acts as a Signal Quality Gate. It actively discards heart rate and temp readings corrupted by movement. Cross-channel correlation (e.g., Temp Spike + Rumination Drop) drives high-confidence alerts.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-summary">
+        <h2>The Bottom Line</h2>
+        <p>Traditional systems tell you a cow is sick today. Farm-Buddy tells you a cow is going to be sick tomorrow. By keeping heavy computation on the edge, aggressively filtering noise via sensor fusion, and comparing every cow strictly against her own adaptive baseline, this pipeline scales reliable, early-warning health monitoring without crushing battery budgets or overwhelming the farmer with false alarms.</p>
+    </div>
+
+</body>
+</html>

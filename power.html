@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Farm-Buddy: Edge Node Power Efficiency</title>
+    <style>
+        :root {
+            --sensor: #6b7a72;
+            --sensor-bg: #eef1ef;
+            --edge: #2f8f7d;
+            --edge-bg: #e6f3f0;
+            --decision: #c9891f;
+            --decision-bg: #faf1e0;
+            --cloud: #d9603a;
+            --cloud-bg: #fbeae4;
+            --terminal: #1f4b34;
+            --terminal-bg: #e3ede7;
+            --ink: #1a2e22;
+            --muted: #6b756f;
+            --bg: #f4f7f2;
+            --white: #ffffff;
+            --border: #dfe6e0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            max-width: 800px;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            margin: 0 0 8px;
+            font-size: 28px;
+            color: var(--terminal);
+        }
+
+        header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .container {
+            display: flex;
+            gap: 30px;
+            max-width: 1100px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            flex: 1;
+            min-width: 300px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin: 0 0 6px;
+            font-size: 18px;
+        }
+
+        .card .sub {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .spec-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border);
+            font-size: 14px;
+        }
+        
+        .spec-row:last-child {
+            border-bottom: none;
+        }
+
+        .spec-label {
+            color: var(--muted);
+        }
+
+        .spec-val {
+            font-weight: 600;
+            font-family: ui-monospace, monospace;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+
+        .badge.micro { background: var(--edge-bg); color: var(--edge); }
+        .badge.sensor { background: var(--sensor-bg); color: var(--sensor); }
+        
+        .summary-panel {
+            width: 100%;
+            max-width: 1100px;
+            background: var(--terminal);
+            color: var(--white);
+            border-radius: 20px;
+            padding: 30px 40px;
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(31, 75, 52, 0.2);
+        }
+
+        .summary-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .summary-stat .label {
+            color: #a3b8ad;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .summary-stat .value {
+            font-size: 32px;
+            font-weight: 700;
+            font-family: ui-monospace, monospace;
+        }
+
+        .summary-stat .unit {
+            font-size: 16px;
+            font-weight: 400;
+            color: #d1e0d8;
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 1100px;
+            margin-top: 40px;
+            background: var(--white);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .chart-title {
+            margin: 0 0 20px;
+            font-size: 16px;
+            color: var(--ink);
+        }
+
+        .bar-wrap {
+            margin-bottom: 16px;
+        }
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--muted);
+        }
+        .bar-bg {
+            height: 12px;
+            background: var(--bg);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Hardware Power Efficiency Budget</h1>
+        <p>Targeting ultra-low power consumption for the edge node. The system primarily remains in deep sleep or low-power sampling states, utilizing Wi-Fi solely for anomalous event escalation to maximize battery longevity.</p>
+    </header>
+
+    <div class="container">
+        <!-- ESP32-C3 -->
+        <div class="card">
+            <span class="badge micro">MICROCONTROLLER</span>
+            <h2>ESP32-C3 Super Mini</h2>
+            <span class="sub">RISC-V Single-Core • 160MHz</span>
+            <div class="spec-row">
+                <span class="spec-label">Deep Sleep</span>
+                <span class="spec-val">~43 µA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Active (No Wi-Fi)</span>
+                <span class="spec-val">~15 mA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Active (Wi-Fi Tx)</span>
+                <span class="spec-val">~280 mA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Duty Cycle</span>
+                <span class="spec-val">~1% Tx / 99% Sleep</span>
+            </div>
+        </div>
+
+        <!-- MPU6500 -->
+        <div class="card">
+            <span class="badge sensor">IMU SENSOR</span>
+            <h2>MPU6500</h2>
+            <span class="sub">6-Axis Accelerometer & Gyroscope</span>
+            <div class="spec-row">
+                <span class="spec-label">Sleep Mode</span>
+                <span class="spec-val">~8 µA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Low-Power Accel (10Hz)</span>
+                <span class="spec-val">~18 µA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Normal Accel + Gyro</span>
+                <span class="spec-val">~3.2 mA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Usage Profile</span>
+                <span class="spec-val">Continuous (Low-Power)</span>
+            </div>
+        </div>
+
+        <!-- MAX30102 -->
+        <div class="card">
+            <span class="badge sensor">PPG SENSOR</span>
+            <h2>MAX30102</h2>
+            <span class="sub">Optical Heart Rate & SpO2</span>
+            <div class="spec-row">
+                <span class="spec-label">Shutdown Mode</span>
+                <span class="spec-val">~0.7 µA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Active (LEDs ON)</span>
+                <span class="spec-val">~1.2 mA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Peak LED Current</span>
+                <span class="spec-val">~50 mA (Pulsed)</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Usage Profile</span>
+                <span class="spec-val">Intermittent (Gated)</span>
+            </div>
+        </div>
+
+        <!-- DS18B20 -->
+        <div class="card">
+            <span class="badge sensor">TEMP SENSOR</span>
+            <h2>DS18B20</h2>
+            <span class="sub">1-Wire Digital Thermometer</span>
+            <div class="spec-row">
+                <span class="spec-label">Standby Mode</span>
+                <span class="spec-val">~750 nA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Active Conversion</span>
+                <span class="spec-val">~1 mA</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Conversion Time</span>
+                <span class="spec-val">~750 ms (12-bit)</span>
+            </div>
+            <div class="spec-row">
+                <span class="spec-label">Usage Profile</span>
+                <span class="spec-val">Polled Every 5 Mins</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Power Breakdown Chart -->
+    <div class="chart-container">
+        <h3 class="chart-title">Estimated Average Current Draw Contribution (Continuous Local Processing)</h3>
+        
+        <div class="bar-wrap">
+            <div class="bar-label">
+                <span>ESP32-C3 (Modem Sleep + Periodic Wake)</span>
+                <span>~2.5 mA Avg</span>
+            </div>
+            <div class="bar-bg">
+                <div class="bar-fill" style="width: 75%; background: var(--edge);"></div>
+            </div>
+        </div>
+
+        <div class="bar-wrap">
+            <div class="bar-label">
+                <span>MAX30102 (Motion-Gated Sampling)</span>
+                <span>~0.4 mA Avg</span>
+            </div>
+            <div class="bar-bg">
+                <div class="bar-fill" style="width: 12%; background: var(--cloud);"></div>
+            </div>
+        </div>
+
+        <div class="bar-wrap">
+            <div class="bar-label">
+                <span>MPU6500 (Continuous Low-Power)</span>
+                <span>~0.018 mA Avg</span>
+            </div>
+            <div class="bar-bg">
+                <div class="bar-fill" style="width: 2%; background: var(--decision);"></div>
+            </div>
+        </div>
+
+        <div class="bar-wrap">
+            <div class="bar-label">
+                <span>DS18B20 (Polled)</span>
+                <span>~0.003 mA Avg</span>
+            </div>
+            <div class="bar-bg">
+                <div class="bar-fill" style="width: 1%; background: var(--sensor);"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary-panel">
+        <div class="summary-stat">
+            <span class="label">Battery Cell</span>
+            <span class="value">3.7<span class="unit">V</span> / 3400<span class="unit">mAh</span></span>
+        </div>
+        <div class="summary-stat">
+            <span class="label">Total Avg Current</span>
+            <span class="value">~2.9<span class="unit">mA</span></span>
+        </div>
+        <div class="summary-stat">
+            <span class="label">Peak Escalation Current</span>
+            <span class="value">~290<span class="unit">mA</span></span>
+        </div>
+        <div class="summary-stat">
+            <span class="label">Est. Battery Life</span>
+            <span class="value" style="color: #4ade80;">~48<span class="unit"> Days</span></span>
+        </div>
+    </div>
+
+</body>
+</html>
