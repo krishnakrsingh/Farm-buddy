@@ -18,28 +18,29 @@ export default function AlertsPage() {
     const filteredAlerts = alertCows.filter((cow) => {
         const matchesFilter = filter === "all" || cow.status === filter;
         const matchesSearch = cow.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              cow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                               cow.shed.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              cow.tagId.toLowerCase().includes(searchQuery.toLowerCase());
+                              cow.breed.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesFilter && matchesSearch;
     });
 
     return (
         <div className="min-h-screen bg-[#DBEDD9] text-[#1B4332] pb-32 relative font-sans overflow-x-hidden selection:bg-[#B7D8C6]">
-            <div className="max-w-md mx-auto relative pt-8 px-5 space-y-6 z-10 pb-10">
+            <div className="max-w-md mx-auto relative pt-8 px-5 space-y-5 z-10 pb-10">
                 {/* Header Section */}
                 <header className="flex justify-between items-center bg-transparent">
                     <div>
                         <h1 className="text-2xl font-black text-[#113A28] leading-none flex items-center gap-2">
-                            <Bell className="text-[#184F35] w-6 h-6" /> Farm Alert Center
+                            <Bell className="text-[#184F35] w-6 h-6" /> Health Alerts
                         </h1>
                         <p className="text-[11px] font-bold text-[#6C8576] mt-1">
-                            Filterable real-time health anomalies
+                            Fever warnings & bulk milk tank protection
                         </p>
                     </div>
 
                     <div className="bg-red-50 text-red-700 text-[10px] font-black px-3 py-1.5 rounded-full shadow-xs border border-red-100 flex items-center gap-1.5 uppercase tracking-wide">
                         <AlertTriangle size={12} className="text-red-500 animate-pulse" /> 
-                        {unhandledEscalated.length} Urgent
+                        {unhandledEscalated.length} High Risk
                     </div>
                 </header>
 
@@ -51,7 +52,7 @@ export default function AlertsPage() {
                         className="bg-red-600 rounded-[24px] p-4 text-white shadow-md border border-red-500 flex justify-between items-center"
                     >
                         <div>
-                            <div className="text-[10px] font-black uppercase tracking-widest opacity-90">Bulk Protection</div>
+                            <div className="text-[10px] font-black uppercase tracking-widest opacity-90">Bulk Milk Tank Protection</div>
                             <div className="text-[14px] font-black leading-tight mt-0.5">
                                 {unhandledEscalated.length} Cows Require Milk Isolation
                             </div>
@@ -60,7 +61,7 @@ export default function AlertsPage() {
                             onClick={holdMilkAllEscalated}
                             className="bg-white text-red-700 hover:bg-red-50 text-[11px] font-black uppercase tracking-wider px-3.5 py-2 rounded-[14px] shadow-sm flex items-center gap-1.5 active:scale-95 transition-all shrink-0"
                         >
-                            <Lock size={12} /> Lock All
+                            <Lock size={12} /> Isolate All
                         </button>
                     </motion.div>
                 )}
@@ -70,7 +71,7 @@ export default function AlertsPage() {
                     <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8DA697]" />
                     <input
                         type="text"
-                        placeholder="Search by Cow ID, Shed, or Tag..."
+                        placeholder="Search by Cow Name, ID, or Breed..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-11 pr-4 py-3 rounded-[20px] bg-white border border-white text-[13px] font-bold text-[#113A28] placeholder-[#8DA697] shadow-[0_8px_24px_rgba(0,0,0,0.03)] focus:outline-none focus:ring-2 focus:ring-[#184F35]"
@@ -86,7 +87,7 @@ export default function AlertsPage() {
                             filter === "all" ? "bg-[#184F35] text-white" : "bg-white text-[#6C8576] border border-white hover:bg-[#F4F9F4]"
                         )}
                     >
-                        All ({alertCows.length})
+                        All Alerts ({alertCows.length})
                     </button>
                     <button 
                         onClick={() => setFilter("escalated")}
@@ -95,7 +96,7 @@ export default function AlertsPage() {
                             filter === "escalated" ? "bg-red-600 text-white" : "bg-white text-red-700 border border-red-100 hover:bg-red-50"
                         )}
                     >
-                        Tier 3 Cloud ({cows.filter(c => c.status === "escalated").length})
+                        High Risk ({cows.filter(c => c.status === "escalated").length})
                     </button>
                     <button 
                         onClick={() => setFilter("flagged")}
@@ -104,7 +105,7 @@ export default function AlertsPage() {
                             filter === "flagged" ? "bg-[#E7A600] text-white" : "bg-white text-[#9A6E00] border border-[#FFEBB3] hover:bg-[#FFF8DF]"
                         )}
                     >
-                        Tier 2 Flagged ({cows.filter(c => c.status === "flagged").length})
+                        Watchlist ({cows.filter(c => c.status === "flagged").length})
                     </button>
                 </div>
 
@@ -118,9 +119,9 @@ export default function AlertsPage() {
                                 className="text-center p-8 bg-white border border-white shadow-xs rounded-[28px] mt-2"
                             >
                                 <CheckCircle2 size={32} className="text-[#4CAF50] mx-auto mb-2" />
-                                <p className="text-[15px] font-black text-[#113A28]">No Alerts Found</p>
+                                <p className="text-[15px] font-black text-[#113A28]">All Herd Health Clear</p>
                                 <p className="text-[12px] font-semibold text-[#6C8576] mt-1">
-                                    No cows match your current filter query.
+                                    No cows currently require health isolation.
                                 </p>
                             </motion.div>
                         ) : (
@@ -141,20 +142,20 @@ export default function AlertsPage() {
                                     >
                                         <div className="flex gap-3">
                                             <div className={cn(
-                                                "w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0 shadow-xs border",
+                                                "w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0 shadow-xs border text-[18px]",
                                                 isEscalated ? "bg-red-50 text-red-600 border-red-100" : "bg-[#FFF8DF] text-[#E7A600] border-[#FFEBB3]"
                                             )}>
-                                                <AlertTriangle size={20} strokeWidth={2.5} className={isEscalated ? "animate-pulse" : ""} />
+                                                🐄
                                             </div>
                                             
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-center mb-0.5">
                                                     <h4 className="text-[16px] font-black text-[#113A28] leading-tight flex items-center gap-2">
-                                                        Cow #{cow.id}
-                                                        <span className="text-[10px] font-mono font-bold text-[#8DA697]">{cow.tagId}</span>
+                                                        {cow.name}
+                                                        <span className="text-[10px] font-mono font-bold text-[#8DA697]">(#{cow.id})</span>
                                                         {cow.isLiveHardware && (
                                                             <span className="text-[8px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
-                                                                <Zap size={8} /> USB UART LIVE
+                                                                <Zap size={8} /> Live Smart Collar Tag
                                                             </span>
                                                         )}
                                                     </h4>
@@ -171,9 +172,7 @@ export default function AlertsPage() {
                                                 <div className="flex items-center gap-3 text-[11px] font-bold text-[#6C8576]">
                                                     <span>{cow.shed}</span>
                                                     <span>Temp: <strong className={isEscalated ? "text-red-600" : "text-[#9A6E00]"}>{cow.temp}°C (+{tempDelta}°C)</strong></span>
-                                                    {cow.isLiveHardware && (
-                                                        <span>SpO2: <strong className="text-blue-600">{cow.spo2?.toFixed(1)}%</strong></span>
-                                                    )}
+                                                    <span>Yield: <strong className="text-[#184F35]">{cow.milkYieldLitersPerDay} L/day</strong></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -182,7 +181,7 @@ export default function AlertsPage() {
                                         <div className="mt-3 pt-3 border-t border-[#E9F4EC] flex items-center justify-between">
                                             {cow.heldMilk ? (
                                                 <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
-                                                    <ShieldCheck size={14} /> Tank Isolation Active
+                                                    <ShieldCheck size={14} /> Milk Isolated from Tank
                                                 </div>
                                             ) : (
                                                 <button 
@@ -197,7 +196,7 @@ export default function AlertsPage() {
                                             )}
 
                                             <div className="flex items-center gap-1 text-[11px] font-black text-[#184F35]">
-                                                <span>View Vitals</span>
+                                                <span>View Health Record</span>
                                                 <ChevronRight size={16} />
                                             </div>
                                         </div>

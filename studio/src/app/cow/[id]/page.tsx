@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Thermometer, Activity, CloudLightning, ShieldAlert, Check, Stethoscope, AlertTriangle, ShieldCheck, Lock, Zap, Droplets } from "lucide-react";
+import { ArrowLeft, Thermometer, Activity, ShieldAlert, Check, Stethoscope, AlertTriangle, ShieldCheck, Lock, Zap, Droplets, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from "recharts";
 import { cn } from "@/lib/utils";
@@ -18,11 +18,11 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
     const cow = cows.find((c) => c.id === cowId) || cows[0];
     const isEscalated = cow.status === "escalated";
     const tempDelta = (cow.temp - cow.baseTemp).toFixed(1);
-    const { liveData, isHardwareOnline, hardwareHistory } = useLiveSensorData(cowId);
+    const { liveData, isHardwareOnline } = useLiveSensorData(cowId);
 
     return (
         <div className="min-h-screen bg-[#DBEDD9] text-[#1B4332] pb-32 relative font-sans overflow-x-hidden selection:bg-[#B7D8C6]">
-            <div className="max-w-md mx-auto relative pt-8 px-5 space-y-6 z-10 pb-10">
+            <div className="max-w-md mx-auto relative pt-8 px-5 space-y-5 z-10 pb-10">
                 {/* Top Header */}
                 <header className="flex justify-between items-center bg-transparent">
                     <button 
@@ -35,82 +35,74 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
                     <div className="flex flex-col items-center">
                         <div className="flex items-center gap-2">
                             <h1 className="text-xl font-black text-[#113A28] leading-none">
-                                Cow #{cow.id}
+                                {cow.name}
                             </h1>
                             <span className="text-[10px] font-mono font-extrabold text-[#6C8576] bg-white px-2 py-0.5 rounded-full border border-[#E9F4EC]">
-                                {cow.tagId}
+                                #{cow.id}
                             </span>
                         </div>
-                        <span className={cn(
-                            "text-[10px] font-black uppercase tracking-wider mt-1 px-2.5 py-0.5 rounded-full",
-                            isEscalated ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
-                        )}>
-                            {isEscalated ? "Tier 3: Escalated to Cloud" : "Tier 2: Flagged on Edge"}
+                        <span className="text-[11px] font-bold text-[#6C8576] mt-0.5">
+                            {cow.breed} • Yield: {cow.milkYieldLitersPerDay} L/day
                         </span>
                     </div>
 
                     <div className="w-10 h-10" />
                 </header>
 
-                {/* Live Hardware Feed Banner */}
+                {/* Smart Tag Active Banner */}
                 {cow.isLiveHardware && isHardwareOnline && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-emerald-600 rounded-[22px] p-3 border border-emerald-500 shadow-md flex items-center gap-3"
+                        className="bg-emerald-600 rounded-[22px] p-3.5 border border-emerald-500 shadow-md flex items-center gap-3 text-white"
                     >
-                        <div className="w-10 h-10 rounded-[14px] bg-emerald-700/60 text-white flex items-center justify-center shrink-0">
-                            <Zap size={22} className="animate-pulse" />
+                        <div className="w-10 h-10 rounded-[14px] bg-emerald-700/80 text-white flex items-center justify-center shrink-0">
+                            <Zap size={22} className="animate-pulse text-yellow-300" />
                         </div>
-                        <div className="text-white">
-                            <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Direct USB UART Serial Stream</div>
-                            <div className="text-[14px] font-black leading-tight">ESP32-C3 Streaming Real Sensor Data (10Hz)</div>
-                            <div className="text-[10px] font-medium opacity-80 mt-0.5">
-                                Device: {liveData?.deviceId} • Latency: &lt;10ms • Packets: {liveData?.sendCount}
-                            </div>
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest opacity-90">Live Smart Ear Tag Connected</div>
+                            <div className="text-[14px] font-black leading-tight">Continuous Vital Signs & Movement Stream</div>
                         </div>
                     </motion.div>
                 )}
 
-                {/* Bulk Milk Tank Protection Status Banner (The Stakes!) */}
+                {/* Bulk Milk Tank Protection Status Banner */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className={cn(
-                        "rounded-[28px] p-4 border transition-all shadow-md relative overflow-hidden",
+                        "rounded-[28px] p-4 border transition-all shadow-md relative overflow-hidden text-white",
                         cow.heldMilk
-                            ? "bg-[#184F35] text-white border-[#184F35]"
-                            : "bg-red-600 text-white border-red-500 animate-pulse"
+                            ? "bg-[#184F35] border-[#184F35]"
+                            : "bg-red-600 border-red-500 animate-pulse"
                     )}
                 >
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className={cn(
-                                "w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0 shadow-sm",
-                                cow.heldMilk ? "bg-emerald-800 text-emerald-200" : "bg-white text-red-600"
-                            )}>
-                                {cow.heldMilk ? <ShieldCheck size={24} /> : <ShieldAlert size={24} />}
+                    <div className="flex items-start gap-3">
+                        <div className={cn(
+                            "w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0 shadow-sm",
+                            cow.heldMilk ? "bg-emerald-800 text-emerald-200" : "bg-white text-red-600"
+                        )}>
+                            {cow.heldMilk ? <ShieldCheck size={24} /> : <ShieldAlert size={24} />}
+                        </div>
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest opacity-80">
+                                Bulk Milk Quality Protection
                             </div>
-                            <div>
-                                <div className="text-[10px] font-black uppercase tracking-widest opacity-80">
-                                    Bulk Tank Protection
-                                </div>
-                                <h3 className="text-[16px] font-black leading-tight mt-0.5">
-                                    {cow.heldMilk 
-                                        ? "TANK SECURED — Milk Withheld" 
-                                        : "HIGH RISK — Hold Milk Immediately"}
-                                </h3>
-                                <p className="text-[11px] font-medium opacity-90 mt-1 leading-snug">
-                                    {cow.heldMilk 
-                                        ? "This cow's milk supply valve is locked. Pooled farm tank contamination is 100% prevented."
-                                        : "Unfiltered milk from this animal risks contaminating the 10,000L farm tank!"}
-                                </p>
-                            </div>
+                            <h3 className="text-[16px] font-black leading-tight mt-0.5">
+                                {cow.heldMilk 
+                                    ? "TANK PROTECTED — Milk Withheld" 
+                                    : "HIGH FEVER — Hold Milk Immediately"}
+                            </h3>
+                            <p className="text-[11px] font-medium opacity-90 mt-1 leading-snug">
+                                {cow.heldMilk 
+                                    ? "Milk from this cow is safely isolated. Bulk farm cooling tank contamination is 100% prevented."
+                                    : "Milk from this animal must be withheld to prevent spoiling the 10,000L farm tank!"}
+                            </p>
                         </div>
                     </div>
                 </motion.div>
 
-                {/* Cloud Model Reasoning & Explainability Card */}
+                {/* Farmer Health Assessment Card */}
                 <motion.div
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -118,36 +110,32 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
                     className="bg-white rounded-[32px] p-5 shadow-[0_12px_32px_rgba(0,0,0,0.05)] border border-white space-y-4"
                 >
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-[14px] bg-red-50 text-red-600 flex items-center justify-center shrink-0 border border-red-100">
-                                <CloudLightning size={20} className="animate-pulse" />
-                            </div>
-                            <div>
-                                <h3 className="text-[16px] font-extrabold text-[#113A28]">
-                                    Cloud Model Classification
-                                </h3>
-                                <p className="text-[11px] font-bold text-red-700">
-                                    {cow.confidence}% Confidence Rating
-                                </p>
-                            </div>
+                        <div>
+                            <h3 className="text-[16px] font-extrabold text-[#113A28]">
+                                Health Condition Summary
+                            </h3>
+                            <p className="text-[11px] font-bold text-[#6C8576]">
+                                Category: <span className="text-red-700 font-extrabold">{cow.category}</span>
+                            </p>
                         </div>
-                        <span className="text-[10px] font-black uppercase bg-red-100 text-red-800 px-2.5 py-1 rounded-full">
-                            Category 4 Alert
+                        <span className={cn(
+                            "text-[10px] font-black uppercase px-3 py-1 rounded-full",
+                            isEscalated ? "bg-red-100 text-red-800 border border-red-200" : "bg-amber-100 text-amber-800"
+                        )}>
+                            {isEscalated ? "High Risk Alert" : "Watchlist Warning"}
                         </span>
                     </div>
 
-                    <div className="bg-[#F8FBF8] rounded-[20px] p-3.5 border border-[#E9F4EC]">
-                        <div className="text-[10px] font-black text-[#6C8576] uppercase tracking-wider mb-0.5">Suspected Health Category</div>
-                        <div className="text-[15px] font-black text-[#113A28]">{cow.category}</div>
-                        <p className="text-[12px] font-medium text-[#6C8576] mt-1.5 leading-relaxed">
-                            {cow.reason}. On-device edge sensor detected individual baseline departure. Cloud neural model confirms high-confidence anomaly requiring immediate isolation.
+                    <div className="bg-[#F8FBF8] rounded-[20px] p-4 border border-[#E9F4EC]">
+                        <p className="text-[13px] font-extrabold text-[#113A28] leading-relaxed">
+                            {cow.farmerNotes}
                         </p>
                     </div>
 
-                    {/* Feature Attribution Breakdown */}
+                    {/* Contributing Factors Breakdown */}
                     <div>
                         <h4 className="text-[11px] font-black uppercase tracking-wider text-[#6C8576] mb-2">
-                            Model Feature Weights (Why Flagged)
+                            Primary Health Indicators
                         </h4>
                         <div className="space-y-2">
                             {cow.featureWeights.map((fw, idx) => (
@@ -167,18 +155,18 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
                         </div>
                     </div>
 
-                    {/* Action Controls */}
+                    {/* Action Buttons for Farm Manager */}
                     <div className="space-y-2.5 pt-2">
                         {!cow.heldMilk ? (
                             <button 
                                 onClick={() => holdMilk(cow.id)}
-                                className="w-full py-4 rounded-[20px] flex items-center justify-center gap-2 font-black text-[15px] transition-all shadow-[0_8px_24px_rgba(239,68,68,0.3)] bg-red-600 text-white hover:bg-red-700 active:scale-95"
+                                className="w-full py-4 rounded-[20px] flex items-center justify-center gap-2 font-black text-[15px] transition-all shadow-md bg-red-600 text-white hover:bg-red-700 active:scale-95"
                             >
-                                <Lock size={18} /> Hold Milk & Lock Valve
+                                <Lock size={18} /> Hold Milk from Bulk Tank
                             </button>
                         ) : (
                             <div className="w-full py-3.5 rounded-[20px] flex items-center justify-center gap-2 font-black text-[14px] bg-emerald-700 text-white shadow-sm">
-                                <Check size={18} /> Milk Isolation Valve Locked
+                                <Check size={18} /> Milk Safely Isolated from Tank
                             </div>
                         )}
 
@@ -187,17 +175,17 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
                                 onClick={() => flagVet(cow.id)}
                                 className="w-full py-3 rounded-[18px] flex items-center justify-center gap-2 font-black text-[13px] border border-red-200 bg-white text-red-700 hover:bg-red-50 transition-colors"
                             >
-                                <Stethoscope size={16} /> Flag for Immediate Vet Visit
+                                <Stethoscope size={16} /> Request Vet Visit for {cow.name}
                             </button>
                         ) : (
                             <div className="w-full py-3 rounded-[18px] flex items-center justify-center gap-2 font-black text-[13px] bg-blue-50 text-blue-800 border border-blue-100">
-                                <Check size={16} /> Vet Notified (Scheduled Today)
+                                <Check size={16} /> Vet Inspection Scheduled Today
                             </div>
                         )}
                     </div>
                 </motion.div>
 
-                {/* 48-Hour Individual Baseline Chart */}
+                {/* Live Vital Signs Chart */}
                 <motion.div
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -206,14 +194,14 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
                 >
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-[16px] font-extrabold text-[#113A28]">
-                            Personalized Baseline Vitals
+                            Vital Signs & Health Baseline
                         </h3>
-                        <span className="text-[10px] font-black text-[#6C8576] bg-[#F4F9F4] px-2 py-0.5 rounded-full border border-[#E9F4EC]">
-                            48h Telemetry
+                        <span className="text-[10px] font-black text-[#6C8576] bg-[#F4F9F4] px-2.5 py-0.5 rounded-full border border-[#E9F4EC]">
+                            24-Hour Trend
                         </span>
                     </div>
                     
-                    <div className="h-[220px] w-full -ml-4">
+                    <div className="h-[200px] w-full -ml-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={cow.telemetryHistory} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E9F4EC" />
@@ -224,9 +212,9 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
                                     contentStyle={{ borderRadius: '14px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', fontWeight: 700, fontSize: '12px' }}
                                     itemStyle={{ fontWeight: 800 }}
                                 />
-                                <ReferenceLine yAxisId="left" y={cow.baseTemp} label={{ value: `Baseline (${cow.baseTemp}°C)`, fill: '#184F35', fontSize: 10, fontWeight: 800 }} stroke="#184F35" strokeDasharray="4 4" />
+                                <ReferenceLine yAxisId="left" y={cow.baseTemp} label={{ value: `Normal (${cow.baseTemp}°C)`, fill: '#184F35', fontSize: 10, fontWeight: 800 }} stroke="#184F35" strokeDasharray="4 4" />
                                 <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 700, marginTop: '10px' }} />
-                                <Line yAxisId="left" type="monotone" dataKey="temp" stroke="#C62828" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} name="Actual Temp (°C)" />
+                                <Line yAxisId="left" type="monotone" dataKey="temp" stroke="#C62828" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} name="Body Temp (°C)" />
                                 <Line yAxisId="right" type="monotone" dataKey="hr" stroke="#F29C38" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} name="Heart Rate (bpm)" />
                             </LineChart>
                         </ResponsiveContainer>
@@ -238,7 +226,7 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
                                 <Thermometer size={18} />
                             </div>
                             <div>
-                                <div className="text-[10px] uppercase font-bold text-[#6C8576]">Current Temp</div>
+                                <div className="text-[10px] uppercase font-bold text-[#6C8576]">Body Temp</div>
                                 <div className="text-[17px] font-black text-[#113A28] leading-none mt-0.5">
                                     {cow.temp}°C <span className="text-[10px] text-red-600">(+{tempDelta}°C)</span>
                                 </div>
@@ -247,43 +235,16 @@ export default function CowDetailPage({ params }: { params: Promise<{ id: string
 
                         <div className="bg-[#F8FBF8] rounded-[20px] p-3 border border-[#E9F4EC] flex items-center gap-3">
                             <div className="bg-orange-50 p-2 rounded-xl text-[#F29C38] shrink-0">
-                                <Activity size={18} />
+                                <Heart size={18} />
                             </div>
                             <div>
-                                <div className="text-[10px] uppercase font-bold text-[#6C8576]">Current Heart Rate</div>
+                                <div className="text-[10px] uppercase font-bold text-[#6C8576]">Heart Rate</div>
                                 <div className="text-[17px] font-black text-[#113A28] leading-none mt-0.5">
                                     {cow.hr} bpm
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* SpO2, Activity, Posture — visible when live hardware is active */}
-                    {cow.isLiveHardware && (
-                        <div className="grid grid-cols-3 gap-2 mt-3">
-                            <div className="bg-blue-50 rounded-[16px] p-2.5 border border-blue-100 text-center">
-                                <Droplets size={16} className="text-blue-500 mx-auto mb-1" />
-                                <div className="text-[9px] font-black text-blue-600 uppercase tracking-wider">SpO2</div>
-                                <div className="text-[16px] font-black text-[#113A28] leading-none mt-0.5">
-                                    {cow.spo2?.toFixed(1)}%
-                                </div>
-                            </div>
-                            <div className="bg-purple-50 rounded-[16px] p-2.5 border border-purple-100 text-center">
-                                <Activity size={16} className="text-purple-500 mx-auto mb-1" />
-                                <div className="text-[9px] font-black text-purple-600 uppercase tracking-wider">Activity</div>
-                                <div className="text-[16px] font-black text-[#113A28] leading-none mt-0.5">
-                                    {Math.round((cow.activityLevel || 0) * 100)}%
-                                </div>
-                            </div>
-                            <div className="bg-teal-50 rounded-[16px] p-2.5 border border-teal-100 text-center">
-                                <div className="text-[16px] mb-0.5">{cow.posture === "standing" ? "💪" : cow.posture === "lying" ? "💤" : "🚶"}</div>
-                                <div className="text-[9px] font-black text-teal-600 uppercase tracking-wider">Posture</div>
-                                <div className="text-[13px] font-black text-[#113A28] leading-none mt-0.5 capitalize">
-                                    {cow.posture || "—"}
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </motion.div>
             </div>
         </div>

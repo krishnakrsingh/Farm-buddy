@@ -10,7 +10,7 @@ const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/herd", label: "Herd", icon: Map },
   { href: "/alerts", label: "Alerts", icon: Bell, badge: 3 },
-  { href: "/hardware", label: "HW", icon: Cpu },
+  { href: "/hardware", label: "Tag", icon: Cpu },
   { href: "/scan", label: "Scan", icon: Camera },
 ];
 
